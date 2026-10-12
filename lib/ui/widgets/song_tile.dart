@@ -31,7 +31,7 @@ class SongTile extends StatelessWidget {
           title,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 17),
+          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16, letterSpacing: -0.1),
         ),
         subtitle: (meta.isEmpty && tags.isEmpty && trecho == null)
             ? null
@@ -77,20 +77,22 @@ class SongTile extends StatelessWidget {
                 ],
               ),
         leading: Container(
-          width: 46,
-          height: 46,
+          width: 42,
+          height: 42,
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [scheme.primary, scheme.tertiary],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(13),
+            color: scheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: scheme.outline),
           ),
           alignment: Alignment.center,
           child: Text(
             keyLabel,
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15),
+            style: TextStyle(
+              fontFamily: 'ChordMono',
+              color: scheme.primary,
+              fontWeight: FontWeight.w700,
+              fontSize: 14,
+            ),
           ),
         ),
         trailing: trailing,

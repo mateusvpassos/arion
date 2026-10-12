@@ -4,6 +4,7 @@ import '../cloud/cloud_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'tema.dart';
 import '../core/pedal.dart';
 import '../data/store.dart';
 import '../sync/drive_sync.dart';
@@ -12,10 +13,7 @@ import 'audit_page.dart';
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
 
-  static const _seeds = [
-    0xFF3D5AFE, 0xFF00897B, 0xFF7E57C2, 0xFFD81B60,
-    0xFFF4511E, 0xFF43A047, 0xFF1E88E5, 0xFF8D6E63,
-  ];
+  static const _seeds = Tema.cores;
 
   @override
   Widget build(BuildContext context) {

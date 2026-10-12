@@ -289,7 +289,7 @@ class AppSettings {
   Map<String, List<int>> pedalKeys;
 
   AppSettings({
-    this.seedColor = 0xFF3D5AFE,
+    this.seedColor = 0xFF4ADE80, // verde da marca (ícone)
     this.dark = true,
     this.fontScale = 1.0,
     this.scrollSpeed = 28,
@@ -311,7 +311,11 @@ class AppSettings {
   };
 
   factory AppSettings.fromJson(Map<String, dynamic> j) => AppSettings(
-    seedColor: (j['seedColor'] ?? 0xFF3D5AFE) as int,
+    // índigo era o padrão antigo: quem nunca escolheu cor vai p/ a marca
+    seedColor: switch ((j['seedColor'] ?? 0xFF4ADE80) as int) {
+      0xFF3D5AFE => 0xFF4ADE80,
+      final c => c,
+    },
     dark: (j['dark'] ?? true) as bool,
     fontScale: ((j['fontScale'] ?? 1.0) as num).toDouble(),
     scrollSpeed: ((j['scrollSpeed'] ?? 28) as num).toDouble(),

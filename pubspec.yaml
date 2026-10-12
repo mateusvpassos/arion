@@ -33,7 +33,8 @@ dev_dependencies:
 
 flutter_launcher_icons:
   android: true
-  ios: false
+  ios: true
+  remove_alpha_ios: true
   image_path: "assets/icon/icon.png"
   adaptive_icon_background: "assets/icon/background.png"
   adaptive_icon_foreground: "assets/icon/foreground.png"
@@ -45,6 +46,18 @@ flutter:
   assets:
     - assets/icon/icon.png
   fonts:
+    # Geist (OFL, assets/fonts/Geist-OFL.txt): mesma fonte do Kino/Strata e do web
+    - family: Geist
+      fonts:
+        - asset: assets/fonts/Geist-Regular.ttf
+        - asset: assets/fonts/Geist-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Geist-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Geist-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Geist-ExtraBold.ttf
+          weight: 800
     - family: ChordMono
       fonts:
         - asset: assets/fonts/JetBrainsMono-Regular.ttf

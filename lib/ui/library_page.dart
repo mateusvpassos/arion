@@ -33,7 +33,7 @@ class _GradientButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final radius = BorderRadius.circular(20);
+    final radius = BorderRadius.circular(12);
     return Container(
       decoration: BoxDecoration(
         borderRadius: radius,
@@ -64,13 +64,13 @@ class _GradientButton extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(icon, color: Colors.white, size: 22),
+                  Icon(icon, color: scheme.onPrimary, size: 22),
                   const SizedBox(width: 8),
                   Text(
                     label,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
+                    style: TextStyle(
+                      color: scheme.onPrimary,
+                      fontWeight: FontWeight.w600,
                       fontSize: 15,
                     ),
                   ),
@@ -154,12 +154,26 @@ class _LibraryPageState extends State<LibraryPage>
             const Text('MyMusic'),
           ],
         ),
-        bottom: TabBar(
-          controller: _tab,
-          tabs: const [
-            Tab(text: 'Músicas'),
-            Tab(text: 'Repertórios'),
-          ],
+        // abas numa cápsula com borda (como no web e no Kino)
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(58),
+          child: Container(
+            height: 44,
+            margin: const EdgeInsets.fromLTRB(12, 2, 12, 12),
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: BorderRadius.circular(11),
+              border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+            ),
+            child: TabBar(
+              controller: _tab,
+              tabs: const [
+                Tab(height: 34, text: 'Músicas'),
+                Tab(height: 34, text: 'Repertórios'),
+              ],
+            ),
+          ),
         ),
         actions: [
           const _CloudButtons(),

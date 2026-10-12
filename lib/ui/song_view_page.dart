@@ -1009,14 +1009,19 @@ class _SongViewPageState extends State<SongViewPage>
     final doAcervo = st.songById(base.id) == null;
     return SafeArea(
       child: Container(
-        height: 60,
+        height: 62,
         decoration: BoxDecoration(
-          color: scheme.surfaceContainerHigh,
+          color: scheme.surfaceContainerLow,
           border: Border(top: BorderSide(color: scheme.outlineVariant)),
         ),
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
+        // barra de "transporte" como no Kino: centralizada quando cabe
+        child: LayoutBuilder(
+          builder: (context, box) => SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minWidth: box.maxWidth),
+              child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const SizedBox(width: 4),
               if (_hasNav)
@@ -1062,11 +1067,33 @@ class _SongViewPageState extends State<SongViewPage>
                     : 'Só letra (p/ quem canta)',
                 onPressed: _toggleLetra,
               ),
-              IconButton.filledTonal(
-                isSelected: _autoScroll,
-                icon: Icon(_autoScroll ? Icons.pause : Icons.play_arrow),
-                tooltip: 'Auto-rolagem',
-                onPressed: _toggleAuto,
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                child: Tooltip(
+                  message: 'Auto-rolagem',
+                  child: Material(
+                    shape: const CircleBorder(),
+                    clipBehavior: Clip.antiAlias,
+                    child: Ink(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [scheme.primary, scheme.tertiary],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                      ),
+                      child: InkWell(
+                        onTap: _toggleAuto,
+                        child: Icon(
+                          _autoScroll ? Icons.pause : Icons.play_arrow,
+                          color: scheme.onPrimary,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               ),
               // velocidade fica gravada na música (cada canto tem a sua)
               if (_autoScroll) ...[
@@ -1115,6 +1142,8 @@ class _SongViewPageState extends State<SongViewPage>
                 ),
               const SizedBox(width: 4),
             ],
+              ),
+            ),
           ),
         ),
       ),
