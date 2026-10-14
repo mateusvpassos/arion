@@ -2,10 +2,11 @@
 
 > Cifras, acordes e letras para uso ao vivo na igreja — pensado para **tablet** (também roda em celular).
 
-App nativo Android feito em **Flutter**, focado em ser **bonito, rápido e fácil de usar no palco**: marcar músicas, transpor na hora, montar repertórios e virar páginas com um pedal Bluetooth.
+App feito em **Flutter** (Android e iOS), focado em ser **bonito, rápido e fácil de usar no palco**: marcar músicas, transpor na hora, montar repertórios e virar páginas com um pedal Bluetooth.
 
 ![Flutter](https://img.shields.io/badge/Flutter-3.44-02569B?logo=flutter&logoColor=white)
-![Plataforma](https://img.shields.io/badge/Android-tablet%20%26%20phone-3DDC84?logo=android&logoColor=white)
+![Android](https://img.shields.io/badge/Android-tablet%20%26%20phone-3DDC84?logo=android&logoColor=white)
+![iOS](https://img.shields.io/badge/iOS-iPad%20%26%20iPhone-000000?logo=apple&logoColor=white)
 ![Offline](https://img.shields.io/badge/Offline-first-success)
 ![Licença](https://img.shields.io/badge/uso-pessoal-lightgrey)
 
@@ -60,11 +61,12 @@ App nativo Android feito em **Flutter**, focado em ser **bonito, rápido e fáci
 
 ## 🚀 Build & instalação
 
-Pré-requisitos: Flutter (canal stable), JDK 17, Android SDK.
+Pré-requisitos: Flutter (canal stable). Android: JDK 17 e Android SDK. iOS: Mac com Xcode (não compila no Windows).
 
 ```bash
 flutter pub get
-flutter build apk --release
+flutter build apk --release          # Android
+flutter build ios --release --no-codesign   # iOS, no Mac
 ```
 
 APK gerado em:
@@ -80,8 +82,11 @@ adb install -r build/app/outputs/flutter-apk/app-release.apk
 
 Rodar em modo dev (hot reload):
 ```bash
-flutter run
+flutter run                 # Android
+flutter run -d ios          # iPhone/iPad, no Mac
 ```
+
+O alvo iOS usa o mesmo código do Android (`lib/`). Bundle: `com.mvini.mymusic`. No Mac, abra `ios/Runner.xcworkspace` no Xcode. A sessão ao vivo na rede local já está liberada no `Info.plist`. Login Google e o grupo Firebase no iOS ficam desligados até registrar o app iOS no Firebase e criar um OAuth Client tipo iOS — sem isso o app abre e funciona offline.
 
 Testes do motor de cifras:
 ```bash
