@@ -472,10 +472,26 @@ class _SongViewPageState extends State<SongViewPage>
     SystemChrome.setEnabledSystemUIMode(
       _full ? SystemUiMode.immersiveSticky : SystemUiMode.edgeToEdge,
     );
+    if (_full) _mostrarControles();
+  }
+
+  // tela cheia: os botões (A-/A+...) ficam por cima da cifra; somem sozinhos
+  // depois de um tempo sem tocar na tela e voltam com qualquer toque
+  bool _controles = true;
+  Timer? _escondeControles;
+
+  void _mostrarControles() {
+    _escondeControles?.cancel();
+    if (!_controles) setState(() => _controles = true);
+    if (!_full) return;
+    _escondeControles = Timer(const Duration(seconds: 3), () {
+      if (mounted && _full) setState(() => _controles = false);
+    });
   }
 
   @override
   void dispose() {
+    _escondeControles?.cancel();
     SongViewPage.openCount--;
     _navSub?.cancel();
     _scrollSub?.cancel();
@@ -704,7 +720,10 @@ class _SongViewPageState extends State<SongViewPage>
                 ),
               ),
             Expanded(
-              child: Stack(
+              // qualquer toque (inclusive rolar) traz os botões da tela cheia
+              child: Listener(
+                onPointerDown: (_) => _mostrarControles(),
+                child: Stack(
                 // sem isso a rolagem encolhia p/ a largura do texto: a faixa
                 // da auto-rolagem e o deslizar p/ trocar de música só
                 // funcionavam em cima da letra
@@ -789,7 +808,12 @@ class _SongViewPageState extends State<SongViewPage>
                       top: 6,
                       right: 6,
                       child: SafeArea(
-                        child: Row(
+                        child: IgnorePointer(
+                          ignoring: !_controles,
+                          child: AnimatedOpacity(
+                            opacity: _controles ? 1 : 0,
+                            duration: const Duration(milliseconds: 300),
+                            child: Row(
                           children: [
                             IconButton.filledTonal(
                               isSelected: letra,
@@ -816,10 +840,13 @@ class _SongViewPageState extends State<SongViewPage>
                               onPressed: _toggleFull,
                             ),
                           ],
+                            ),
+                          ),
                         ),
                       ),
                     ),
                 ],
+              ),
               ),
             ),
           ],
