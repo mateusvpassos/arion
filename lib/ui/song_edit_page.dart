@@ -5,7 +5,6 @@ import '../cloud/acervo.dart';
 import '../cloud/cloud_state.dart';
 import '../core/chord_engine.dart';
 import '../core/letras.dart';
-import '../core/liturgia.dart';
 import '../data/store.dart';
 import '../models/song.dart';
 import 'package:provider/provider.dart';
@@ -596,77 +595,6 @@ class _SongEditPageState extends State<SongEditPage> {
               ),
             ],
           ),
-          _liturgia(scheme),
-        ],
-      ),
-    );
-  }
-
-  // tempo litúrgico / momento da Missa: usados p/ sugerir cantos ao montar o
-  // repertório. Recolhido p/ não roubar espaço do editor.
-  Widget _liturgia(ColorScheme scheme) {
-    final resumo = [..._song.tempos, ..._song.momentos].join(' · ');
-    Widget grupo(String titulo, List<String> opcoes, List<String> marcados) =>
-        Padding(
-          padding: const EdgeInsets.only(bottom: 6),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                titulo,
-                style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
-              ),
-              const SizedBox(height: 2),
-              Wrap(
-                spacing: 4,
-                runSpacing: 2,
-                children: [
-                  for (final o in opcoes)
-                    FilterChip(
-                      label: Text(o),
-                      visualDensity: VisualDensity.compact,
-                      selected: marcados.contains(o),
-                      onSelected: (v) => setState(() {
-                        if (v) {
-                          marcados.add(o);
-                          // mantém na ordem da lista (calendário / Missa)
-                          marcados.sort(
-                            (a, b) =>
-                                opcoes.indexOf(a).compareTo(opcoes.indexOf(b)),
-                          );
-                        } else {
-                          marcados.remove(o);
-                        }
-                      }),
-                    ),
-                ],
-              ),
-            ],
-          ),
-        );
-    return Theme(
-      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-      child: ExpansionTile(
-        tilePadding: EdgeInsets.zero,
-        expandedAlignment: Alignment.centerLeft,
-        expandedCrossAxisAlignment: CrossAxisAlignment.start,
-        dense: true,
-        leading: const Icon(Icons.church_outlined, size: 20),
-        title: Text(
-          resumo.isEmpty ? 'Tempo litúrgico e momento da Missa' : resumo,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        subtitle: resumo.isEmpty
-            ? const Text('p/ sugerir este canto ao montar o repertório')
-            : null,
-        children: [
-          grupo(
-            'Tempo litúrgico (nenhum = qualquer tempo)',
-            Liturgia.tempos,
-            _song.tempos,
-          ),
-          grupo('Momento da Missa', Liturgia.momentos, _song.momentos),
         ],
       ),
     );
