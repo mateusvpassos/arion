@@ -1,8 +1,10 @@
+import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../cloud/acervo.dart';
 import '../cloud/cloud_state.dart';
 import '../core/chord_engine.dart';
+import '../core/letras.dart';
 import '../core/liturgia.dart';
 import '../data/store.dart';
 import '../models/song.dart';
@@ -76,6 +78,18 @@ class _SongEditPageState extends State<SongEditPage> {
     'A/C#',
     'D/F#',
   ];
+  // acordes que a pessoa digitou (+), na frente da paleta
+  final List<String> _meus = [];
+
+  /// Paleta: os digitados, os do tom (campo harmônico) e os comuns.
+  List<String> get _paleta => {
+    ..._meus,
+    ...ChordEngine.campoHarmonico(_key.text),
+    ..._palette,
+  }.toList();
+
+  /// Acorde escolhido na paleta p/ pôr com toques na letra (sem arrastar).
+  String? _armado;
 
   @override
   void initState() {
@@ -90,7 +104,9 @@ class _SongEditPageState extends State<SongEditPage> {
     _sugestao = widget.acervo != null
         ? !acervo.podeEditar(src)
         : widget.novo == null && !cloud.podeEditarSong(src);
-    _donoNome = widget.acervo != null ? acervo.nomeDe(src.dono) : cloud.nomeDe(src.dono);
+    _donoNome = widget.acervo != null
+        ? acervo.nomeDe(src.dono)
+        : cloud.nomeDe(src.dono);
     _song = src.copy();
     ChordEngine.trimSectionEnds(_song.sections);
     _title = TextEditingController(text: _song.title);
@@ -218,7 +234,9 @@ class _SongEditPageState extends State<SongEditPage> {
       }
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Sugestão enviada — $_donoNome decide se aceita')),
+        SnackBar(
+          content: Text('Sugestão enviada — $_donoNome decide se aceita'),
+        ),
       );
       Navigator.pop(context);
       return;
@@ -242,7 +260,8 @@ class _SongEditPageState extends State<SongEditPage> {
           controller: ctrl,
           autofocus: true,
           decoration: const InputDecoration(
-            hintText: 'Recado p/ o dono (opcional) — ex.: acorde errado no refrão',
+            hintText:
+                'Recado p/ o dono (opcional) — ex.: acorde errado no refrão',
           ),
         ),
         actions: [
@@ -360,6 +379,11 @@ class _SongEditPageState extends State<SongEditPage> {
             tooltip: 'Desfazer',
             icon: const Icon(Icons.undo),
             onPressed: _undo.isEmpty ? null : _undoLast,
+          ),
+          IconButton(
+            tooltip: 'Buscar letra',
+            icon: const Icon(Icons.lyrics_outlined),
+            onPressed: _buscarLetra,
           ),
           IconButton(
             tooltip: 'Importar cifra',
@@ -507,6 +531,8 @@ class _SongEditPageState extends State<SongEditPage> {
                 width: 80,
                 child: TextField(
                   controller: _key,
+                  // a paleta de acordes segue o tom
+                  onChanged: (_) => setState(() {}),
                   textAlign: TextAlign.center,
                   decoration: const InputDecoration(
                     labelText: 'Tom',
@@ -750,6 +776,7 @@ class _SongEditPageState extends State<SongEditPage> {
                   icon: const Icon(Icons.more_vert, size: 20),
                   onSelected: (v) {
                     if (v == 'rename') _renameSection(sec);
+                    if (v == 'copiar') _copiarAcordesDe(sec);
                     if (v == 'dup') {
                       setState(() => _song.sections.insert(si + 1, sec.copy()));
                       _recordChange();
@@ -759,10 +786,21 @@ class _SongEditPageState extends State<SongEditPage> {
                       _recordChange();
                     }
                   },
-                  itemBuilder: (_) => const [
-                    PopupMenuItem(value: 'rename', child: Text('Renomear')),
-                    PopupMenuItem(value: 'dup', child: Text('Duplicar')),
-                    PopupMenuItem(value: 'del', child: Text('Excluir')),
+                  itemBuilder: (_) => [
+                    const PopupMenuItem(
+                      value: 'rename',
+                      child: Text('Renomear'),
+                    ),
+                    if (_song.sections.any(
+                      (s) =>
+                          s != sec && s.lines.any((l) => l.chords.isNotEmpty),
+                    ))
+                      const PopupMenuItem(
+                        value: 'copiar',
+                        child: Text('Copiar acordes de outra parte'),
+                      ),
+                    const PopupMenuItem(value: 'dup', child: Text('Duplicar')),
+                    const PopupMenuItem(value: 'del', child: Text('Excluir')),
                   ],
                 ),
               ],
@@ -773,6 +811,8 @@ class _SongEditPageState extends State<SongEditPage> {
                 chordColor: scheme.primary,
                 onChanged: _recordChange,
                 onEditChord: (c) => _editChord(line, c),
+                armado: _armado,
+                onPlace: (idx) => _porArmado(line, idx),
               ),
             Align(
               alignment: Alignment.centerLeft,
@@ -792,45 +832,183 @@ class _SongEditPageState extends State<SongEditPage> {
   }
 
   Widget _paletteBar(ColorScheme scheme) {
+    final paleta = _paleta;
+    final doTom = ChordEngine.campoHarmonico(_key.text).toSet();
     return Container(
       decoration: BoxDecoration(
         color: scheme.surfaceContainerHigh,
         border: Border(top: BorderSide(color: scheme.outlineVariant)),
       ),
       padding: const EdgeInsets.symmetric(vertical: 8),
-      child: SizedBox(
-        height: 44,
-        child: Row(
-          children: [
-            const SizedBox(width: 8),
-            const Padding(
-              padding: EdgeInsets.only(right: 6),
-              child: Text(
-                'Acordes',
-                style: TextStyle(fontWeight: FontWeight.w700),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
+            child: Text(
+              _armado == null
+                  ? 'Toque num acorde e depois na letra onde ele entra — ou arraste p/ cima.'
+                  : 'Toque na letra onde entra o $_armado. Toque nele de novo p/ parar.',
+              style: TextStyle(
+                fontSize: 12,
+                color: _armado == null
+                    ? scheme.onSurfaceVariant
+                    : scheme.primary,
+                fontWeight: _armado == null ? null : FontWeight.w600,
               ),
             ),
-            Expanded(
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: _palette.length + 1,
-                separatorBuilder: (_, _) => const SizedBox(width: 6),
-                itemBuilder: (_, i) {
-                  if (i == _palette.length) {
-                    return ActionChip(
-                      label: const Icon(Icons.add, size: 18),
-                      onPressed: _addCustomChord,
-                    );
-                  }
-                  return _PaletteChip(sym: _palette[i], color: scheme.primary);
-                },
-              ),
+          ),
+          SizedBox(
+            height: 44,
+            child: Row(
+              children: [
+                const SizedBox(width: 8),
+                Expanded(
+                  // no PC também rola arrastando com o mouse (não só a roda)
+                  child: ScrollConfiguration(
+                    behavior: ScrollConfiguration.of(
+                      context,
+                    ).copyWith(dragDevices: PointerDeviceKind.values.toSet()),
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: paleta.length + 1,
+                      separatorBuilder: (_, _) => const SizedBox(width: 6),
+                      itemBuilder: (_, i) {
+                        if (i == paleta.length) {
+                          return ActionChip(
+                            label: const Icon(Icons.add, size: 18),
+                            onPressed: _addCustomChord,
+                          );
+                        }
+                        final s = paleta[i];
+                        return _PaletteChip(
+                          sym: s,
+                          color: scheme.primary,
+                          doTom: doTom.contains(s),
+                          selecionado: _armado == s,
+                          onTap: () =>
+                              setState(() => _armado = _armado == s ? null : s),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+              ],
             ),
-            const SizedBox(width: 8),
-          ],
-        ),
+          ),
+        ],
       ),
     );
+  }
+
+  /// Toque na letra com um acorde escolhido: põe ele ali (troca o que já
+  /// estava na mesma letra).
+  void _porArmado(SongLine line, int idx) {
+    final s = _armado;
+    if (s == null) return;
+    line.chords
+      ..removeWhere((c) => c.idx == idx)
+      ..add(Chord(s, idx));
+    _recordChange();
+  }
+
+  /// Estrofe com a mesma melodia: traz os acordes de outra seção.
+  Future<void> _copiarAcordesDe(Section dst) async {
+    final fontes = _song.sections
+        .where((s) => s != dst && s.lines.any((l) => l.chords.isNotEmpty))
+        .toList();
+    final src = await showDialog<Section>(
+      context: context,
+      builder: (_) => SimpleDialog(
+        title: const Text('Copiar acordes de qual parte?'),
+        children: [
+          for (final s in fontes)
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(context, s),
+              child: Text(
+                '${s.name.isEmpty ? '(sem nome)' : s.name} — '
+                '${s.lines.firstWhere((l) => l.lyric.trim().isNotEmpty, orElse: () => s.lines.first).lyric.trim()}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+        ],
+      ),
+    );
+    if (src == null || !mounted) return;
+    final temAcordes = dst.lines.any((l) => l.chords.isNotEmpty);
+    if (temAcordes) {
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('Trocar os acordes desta parte?'),
+          content: const Text('Os acordes que já estão aqui saem.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Trocar'),
+            ),
+          ],
+        ),
+      );
+      if (ok != true) return;
+    }
+    // linha a linha, pulando as vazias dos dois lados
+    final de = src.lines
+        .where((l) => l.lyric.trim().isNotEmpty || l.chords.isNotEmpty)
+        .toList();
+    final para = dst.lines.where((l) => l.lyric.trim().isNotEmpty).toList();
+    for (var i = 0; i < para.length && i < de.length; i++) {
+      para[i].chords = ChordEngine.copiarAcordes(de[i], para[i]);
+    }
+    _recordChange();
+  }
+
+  Future<void> _buscarLetra() async {
+    final t = _title.text.trim();
+    final termo = [
+      if (t.isNotEmpty && t != 'Nova música') t,
+      _artist.text.trim(),
+    ].where((x) => x.isNotEmpty).join(' ');
+    final achada = await showDialog<LetraAchada>(
+      context: context,
+      builder: (_) => _BuscarLetraDialog(termo: termo),
+    );
+    if (achada == null || !mounted) return;
+    final temLetra = _song.sections.any(
+      (s) => s.lines.any((l) => l.lyric.trim().isNotEmpty),
+    );
+    if (temLetra) {
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('Trocar a letra?'),
+          content: const Text('A letra e os acordes que já estão aqui saem.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Trocar'),
+            ),
+          ],
+        ),
+      );
+      if (ok != true || !mounted) return;
+    }
+    _song.sections = Letras.paraSecoes(achada.letra);
+    if (t.isEmpty || t == 'Nova música') _title.text = achada.titulo;
+    if (_artist.text.trim().isEmpty) _artist.text = achada.artista;
+    _mode = 0;
+    _syncTextFromModel();
+    _recordChange();
   }
 
   void _addCustomChord() async {
@@ -860,7 +1038,9 @@ class _SongEditPageState extends State<SongEditPage> {
     final t = sym?.trim() ?? '';
     if (t.isNotEmpty) {
       setState(() {
-        if (!_palette.contains(t)) _palette.insert(0, t);
+        if (!_meus.contains(t)) _meus.insert(0, t);
+        // já deixa escolhido p/ pôr na letra
+        _armado = t;
       });
     }
   }
@@ -931,22 +1111,44 @@ class _SongEditPageState extends State<SongEditPage> {
   }
 }
 
-/// Chip arrastável da paleta.
+/// Chip da paleta: tocar escolhe (p/ pôr com toques na letra); arrastar p/
+/// cima leva até a letra. Arrastar de lado rola a paleta.
 class _PaletteChip extends StatelessWidget {
   final String sym;
   final Color color;
-  const _PaletteChip({required this.sym, required this.color});
+  final bool doTom, selecionado;
+  final VoidCallback onTap;
+  const _PaletteChip({
+    required this.sym,
+    required this.color,
+    required this.doTom,
+    required this.selecionado,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final chip = Chip(
-      label: Text(
-        sym,
-        style: TextStyle(color: color, fontWeight: FontWeight.w700),
+    final chip = GestureDetector(
+      onTap: onTap,
+      child: Chip(
+        label: Text(
+          sym,
+          style: TextStyle(
+            color: selecionado ? Colors.white : color,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        backgroundColor: selecionado ? color : null,
+        // os do tom com borda na cor do destaque
+        side: doTom && !selecionado
+            ? BorderSide(color: color.withValues(alpha: 0.6))
+            : null,
+        visualDensity: VisualDensity.compact,
       ),
-      visualDensity: VisualDensity.compact,
     );
     return Draggable<_ChordDrag>(
+      // só o arrasto vertical pega o acorde; o lateral fica p/ a rolagem
+      affinity: Axis.vertical,
       data: _ChordDrag(sym, null, null),
       feedback: Material(color: Colors.transparent, child: _ghost(sym, color)),
       child: chip,
@@ -970,11 +1172,17 @@ class _EditableLine extends StatefulWidget {
   final Color chordColor;
   final VoidCallback onChanged;
   final void Function(Chord) onEditChord;
+
+  /// acorde escolhido na paleta: tocar na linha põe ele ali
+  final String? armado;
+  final void Function(int idx) onPlace;
   const _EditableLine({
     required this.line,
     required this.chordColor,
     required this.onChanged,
     required this.onEditChord,
+    required this.armado,
+    required this.onPlace,
   });
 
   @override
@@ -1079,7 +1287,7 @@ class _EditableLineState extends State<_EditableLine> {
         widget.onChanged();
       },
       builder: (context, cand, rej) {
-        return Container(
+        final box = Container(
           color: cand.isNotEmpty
               ? widget.chordColor.withValues(alpha: 0.08)
               : Colors.transparent,
@@ -1099,7 +1307,173 @@ class _EditableLineState extends State<_EditableLine> {
             ],
           ),
         );
+        if (widget.armado == null || line.lyric.isEmpty) return box;
+        return GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTapUp: (d) => widget.onPlace(_idxFromGlobal(d.globalPosition)),
+          child: box,
+        );
       },
+    );
+  }
+}
+
+/// Busca a letra no LRCLIB; tocar num resultado mostra a letra p/ conferir.
+class _BuscarLetraDialog extends StatefulWidget {
+  final String termo;
+  const _BuscarLetraDialog({required this.termo});
+  @override
+  State<_BuscarLetraDialog> createState() => _BuscarLetraDialogState();
+}
+
+class _BuscarLetraDialogState extends State<_BuscarLetraDialog> {
+  late final _q = TextEditingController(text: widget.termo);
+  List<LetraAchada>? _res;
+  LetraAchada? _vendo;
+  bool _buscando = false;
+  String? _erro;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.termo.isNotEmpty) _buscar();
+  }
+
+  @override
+  void dispose() {
+    _q.dispose();
+    super.dispose();
+  }
+
+  Future<void> _buscar() async {
+    setState(() {
+      _buscando = true;
+      _erro = null;
+      _vendo = null;
+    });
+    try {
+      final r = await Letras.buscar(_q.text);
+      if (mounted) setState(() => _res = r);
+    } catch (e) {
+      if (mounted)
+        setState(() => _erro = 'Não deu p/ buscar (precisa de internet): $e');
+    } finally {
+      if (mounted) setState(() => _buscando = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final v = _vendo;
+    final cinza = TextStyle(
+      fontSize: 12,
+      color: Theme.of(context).colorScheme.onSurfaceVariant,
+    );
+    return AlertDialog(
+      title: Text(v == null ? 'Buscar letra' : v.titulo),
+      content: SizedBox(
+        width: 560,
+        height: 460,
+        child: v != null
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    [v.artista, v.album].where((x) => x.isNotEmpty).join(' · '),
+                    style: cinza,
+                  ),
+                  const SizedBox(height: 8),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: SelectableText(
+                        v.letra,
+                        style: const TextStyle(height: 1.4),
+                      ),
+                    ),
+                  ),
+                ],
+              )
+            : Column(
+                children: [
+                  TextField(
+                    controller: _q,
+                    autofocus: widget.termo.isEmpty,
+                    textInputAction: TextInputAction.search,
+                    onSubmitted: (_) => _buscar(),
+                    decoration: InputDecoration(
+                      hintText: 'Nome da música (e o artista, se souber)',
+                      suffixIcon: IconButton(
+                        icon: const Icon(Icons.search),
+                        onPressed: _buscar,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  if (_buscando) const LinearProgressIndicator(),
+                  if (_erro != null)
+                    Text(
+                      _erro!,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                    ),
+                  Expanded(
+                    child: _res == null
+                        ? Center(
+                            child: Text(
+                              'As letras vêm do LRCLIB (lrclib.net), uma base aberta. '
+                              'Os acordes você põe depois.',
+                              textAlign: TextAlign.center,
+                              style: cinza,
+                            ),
+                          )
+                        : _res!.isEmpty
+                        ? Center(
+                            child: Text(
+                              'Nada encontrado. Tente com o nome do artista.',
+                              style: cinza,
+                            ),
+                          )
+                        : ListView.builder(
+                            itemCount: _res!.length,
+                            itemBuilder: (_, i) {
+                              final r = _res![i];
+                              return ListTile(
+                                contentPadding: EdgeInsets.zero,
+                                title: Text(r.titulo),
+                                subtitle: Text(
+                                  [
+                                    r.artista,
+                                    r.letra.split('\n').first,
+                                  ].where((x) => x.isNotEmpty).join(' · '),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                onTap: () => setState(() => _vendo = r),
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              ),
+      ),
+      actions: v == null
+          ? [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Fechar'),
+              ),
+            ]
+          : [
+              TextButton(
+                onPressed: () => setState(() => _vendo = null),
+                child: const Text('Voltar'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(context, v),
+                child: const Text('Usar esta letra'),
+              ),
+            ],
     );
   }
 }

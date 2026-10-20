@@ -537,6 +537,56 @@ class ChordEngine {
     return null;
   }
 
+  /// Acordes do tom (campo harmônico) + os de passagem mais comuns, p/ a
+  /// paleta do editor. Ex.: G -> G Am Bm C D Em F#° D7 ... ; Em -> Em F#° G Am Bm C D B7 ...
+  static List<String> campoHarmonico(String key) {
+    final m = _parts.firstMatch(key.trim());
+    if (m == null || _noteId(m.group(1)!) < 0) return const [];
+    final root = m.group(1)!;
+    final qual = m.group(2) ?? '';
+    final menor = qual.startsWith('m') && !qual.startsWith('maj');
+    final bemol = _flatKeys.contains(menor ? '${root}m' : root);
+    String n(int semitons) => transposeNote(root, semitons, bemol);
+    final l = menor
+        // i ii° III iv v VI VII + V7 (harmônica) e iv7/i7
+        ? ['${n(0)}m', '${n(2)}°', n(3), '${n(5)}m', '${n(7)}m', n(8), n(10), '${n(7)}7', n(7), '${n(0)}m7', '${n(5)}m7']
+        // I ii iii IV V vi vii° + V7, I7 (vai p/ IV), II7 (vai p/ V), I/3 e V/7
+        : [n(0), '${n(2)}m', '${n(4)}m', n(5), n(7), '${n(9)}m', '${n(11)}°', '${n(7)}7', '${n(0)}7', '${n(2)}7',
+           '${n(0)}/${n(4)}', '${n(7)}/${n(11)}', '${n(2)}m7', '${n(9)}m7', '${n(7)}sus4'];
+    return l.toSet().toList();
+  }
+
+  /// Põe na linha [dst] os acordes da linha [src] (estrofes com a mesma
+  /// melodia): mesma proporção na linha, encostando no começo da palavra.
+  static List<Chord> copiarAcordes(SongLine src, SongLine dst) {
+    final ls = src.lyric.length, ld = dst.lyric.length;
+    final out = <Chord>[];
+    for (final c in src.chords) {
+      var i = ls == 0 || ld == 0 ? min(c.idx, ld) : (c.idx * ld / ls).round();
+      i = _inicioDaPalavra(dst.lyric, i.clamp(0, ld));
+      // dois acordes não ficam na mesma letra
+      while (out.any((o) => o.idx == i) && i < ld) {
+        i++;
+      }
+      out.add(Chord(c.sym, i));
+    }
+    return out;
+  }
+
+  // posição -> começo da palavra mais perto (ou a própria, se já for)
+  static int _inicioDaPalavra(String s, int i) {
+    if (i >= s.length || i == 0 || s[i - 1] == ' ') return i;
+    var a = i, b = i;
+    while (a > 0 && s[a - 1] != ' ') {
+      a--;
+    }
+    while (b < s.length && s[b] != ' ') {
+      b++;
+    }
+    if (b < s.length) b++; // começo da próxima palavra
+    return (i - a) <= (b - i) || b >= s.length ? a : b;
+  }
+
   static String rootOf(String chord) {
     final m = _parts.firstMatch(chord);
     return m != null ? m.group(1)! : chord;
