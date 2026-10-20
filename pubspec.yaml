@@ -40,6 +40,10 @@ flutter_launcher_icons:
   adaptive_icon_foreground: "assets/icon/foreground.png"
   adaptive_icon_foreground_inset: 0 # desenho já respeita a zona segura
   adaptive_icon_monochrome: "assets/icon/monochrome.png" # ícone temático (Android 13+)
+  windows:
+    generate: true
+    image_path: "assets/icon/icon.png"
+    icon_size: 256
 
 flutter:
   uses-material-design: true
