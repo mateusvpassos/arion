@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/widgets.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:path_provider/path_provider.dart';
+import '../core/chord_engine.dart';
 import '../core/diff.dart';
 import '../data/store.dart';
 import '../models/song.dart';
@@ -16,7 +17,18 @@ import 'cloud_config.dart';
 class Grupo {
   final String id, nome, dono;
   final List<String> membros;
-  const Grupo(this.id, this.nome, this.dono, this.membros);
+  /// a biblioteca pessoal, criada sozinha no 1º login
+  final bool pessoal;
+  /// apagado pelo dono (as regras não deixam apagar o documento)
+  final bool apagado;
+  const Grupo(
+    this.id,
+    this.nome,
+    this.dono,
+    this.membros, {
+    this.pessoal = false,
+    this.apagado = false,
+  });
 
   factory Grupo.fromDoc(DocumentSnapshot<Map<String, dynamic>> d) {
     final j = d.data() ?? const {};
@@ -25,6 +37,12 @@ class Grupo {
       (j['nome'] ?? '') as String,
       (j['dono'] ?? '') as String,
       ((j['membros'] as List?) ?? const []).cast<String>(),
+      // grupos antigos não têm o campo: a pessoal era "Biblioteca de <nome>"
+      pessoal:
+          j['pessoal'] == true ||
+          (j['pessoal'] == null &&
+              ((j['nome'] ?? '') as String).startsWith('Biblioteca de ')),
+      apagado: j['apagado'] == true,
     );
   }
 }
@@ -310,13 +328,20 @@ class CloudState extends ChangeNotifier with WidgetsBindingObserver {
         .snapshots()
         .listen(
           (q) {
-            grupos = q.docs.map(Grupo.fromDoc).toList()
-              ..sort((a, b) => a.nome.compareTo(b.nome));
+            grupos = q.docs.map(Grupo.fromDoc).where((g) => !g.apagado).toList()
+              // a minha pessoal primeiro, depois por nome
+              ..sort((a, b) {
+                final pa = a.pessoal && a.dono == eu;
+                final pb = b.pessoal && b.dono == eu;
+                if (pa != pb) return pa ? -1 : 1;
+                return a.nome.compareTo(b.nome);
+              });
             // sem grupo nenhum (confirmado pelo servidor): cria a biblioteca
             // pessoal na nuvem — tudo fica no Firebase sem precisar apertar nada
             if (grupos.isEmpty && !q.metadata.isFromCache && !_criando) {
               _criando = true;
-              criarGrupo('Biblioteca de $nome').whenComplete(() => _criando = false);
+              criarGrupo('Biblioteca de $nome', pessoal: true)
+                  .whenComplete(() => _criando = false);
               return;
             }
             final atual = grupo == null
@@ -331,8 +356,12 @@ class CloudState extends ChangeNotifier with WidgetsBindingObserver {
               final salvo = grupos
                   .where((x) => x.id == _grupoSalvo)
                   .firstOrNull;
+              // nada escolhido ainda neste aparelho: abre a minha biblioteca
+              final minha = grupos
+                  .where((x) => x.pessoal && x.dono == eu)
+                  .firstOrNull;
               final escolhido =
-                  salvo ?? (grupos.length == 1 ? grupos.first : null);
+                  salvo ?? minha ?? (grupos.length == 1 ? grupos.first : null);
               if (escolhido != null) _abrirGrupo(escolhido);
             }
             notifyListeners();
@@ -346,7 +375,7 @@ class CloudState extends ChangeNotifier with WidgetsBindingObserver {
 
   bool _criando = false;
 
-  Future<void> criarGrupo(String nomeGrupo) async {
+  Future<void> criarGrupo(String nomeGrupo, {bool pessoal = false}) async {
     final ref = _db.collection('grupos').doc();
     erro = null;
     try {
@@ -356,6 +385,7 @@ class CloudState extends ChangeNotifier with WidgetsBindingObserver {
         'nome': nomeGrupo,
         'dono': eu,
         'membros': [eu],
+        'pessoal': pessoal,
         'criadoEm': FieldValue.serverTimestamp(),
       });
     } catch (e) {
@@ -363,46 +393,171 @@ class CloudState extends ChangeNotifier with WidgetsBindingObserver {
       notifyListeners();
       return;
     }
-    _abrirGrupo(Grupo(ref.id, nomeGrupo, eu, [eu]));
+    final novo = Grupo(ref.id, nomeGrupo, eu, [eu], pessoal: pessoal);
+    if (grupo == null) {
+      _abrirGrupo(novo);
+    } else if (!grupos.any((x) => x.id == novo.id)) {
+      // já tem um em uso: o novo só aparece na lista
+      grupos = [...grupos, novo];
+    }
     notifyListeners();
   }
 
+  /// Troca o grupo em uso no app. Tira deste aparelho o que era do grupo
+  /// anterior (continua salvo lá); senão ia parar no grupo novo.
   void escolherGrupo(Grupo g) {
     if (grupo?.id == g.id) return;
+    if (grupo != null) {
+      _flush();
+      app.esquecer(songs: Set.of(_songsNaNuvem), setlists: Set.of(_setsNaNuvem));
+    }
     _pararGrupo();
     _abrirGrupo(g);
     notifyListeners();
   }
 
-  Future<void> convidar(String email) async {
+  DocumentReference<Map<String, dynamic>> _ref(Grupo g) =>
+      _db.collection('grupos').doc(g.id);
+
+  Future<void> renomearGrupo(Grupo g, String novoNome) async {
+    final n = novoNome.trim();
+    if (n.isEmpty || g.dono != eu) return;
+    await _semEsperar(_ref(g).update({'nome': n}));
+  }
+
+  /// Só o dono; a biblioteca pessoal não se apaga.
+  Future<void> apagarGrupo(Grupo g) async {
+    if (g.dono != eu || g.pessoal) return;
+    if (grupo?.id == g.id) {
+      final minha = grupos.where((x) => x.pessoal && x.dono == eu).firstOrNull;
+      if (minha != null) escolherGrupo(minha);
+    }
+    await _semEsperar(_ref(g).update({'apagado': true}));
+  }
+
+  Future<void> convidar(String email, [Grupo? em]) async {
+    final g = em ?? grupo;
     final e = email.trim().toLowerCase();
-    if (grupo == null || e.isEmpty || grupo!.membros.contains(e)) return;
+    if (g == null || e.isEmpty || g.membros.contains(e)) return;
     await _semEsperar(
-      _g.update({
+      _ref(g).update({
         'membros': FieldValue.arrayUnion([e]),
       }),
     );
   }
 
-  Future<void> remover(String email) async {
-    if (grupo == null || email == grupo!.dono) return;
+  Future<void> remover(String email, [Grupo? em]) async {
+    final g = em ?? grupo;
+    if (g == null || email == g.dono) return;
     await _semEsperar(
-      _g.update({
+      _ref(g).update({
         'membros': FieldValue.arrayRemove([email]),
       }),
     );
   }
 
   /// Quem pode editar TODAS as minhas músicas e repertórios sem pedir.
-  Future<void> setConfianca(List<String> emails) async {
+  Future<void> setConfianca(List<String> emails, [Grupo? em]) async {
     if (user == null) return;
     // vale p/ o acervo geral e p/ o grupo
     await _semEsperar(
       _db.collection('confianca').doc(eu).set({'editores': emails}),
     );
-    if (!ativa) return;
+    final g = em ?? grupo;
+    if (g == null) return;
     await _semEsperar(
-      _g.collection('confianca').doc(eu).set({'editores': emails}),
+      _ref(g).collection('confianca').doc(eu).set({'editores': emails}),
+    );
+  }
+
+  /// Quem eu deixei editar tudo meu neste grupo.
+  Stream<List<String>> confiancaEm(Grupo g) => _ref(g)
+      .collection('confianca')
+      .doc(eu)
+      .snapshots()
+      .map((d) => ((d.data()?['editores'] as List?) ?? const []).cast<String>());
+
+  // ---------------- músicas de um grupo (em uso ou não) ----------------
+
+  Stream<List<Song>> musicasDe(Grupo g) =>
+      _ref(g).collection('musicas').snapshots().map(
+        (q) => q.docs
+            .where((d) => d.data()['apagada'] != true)
+            .map((d) => Song.fromJson(normFirestore(d.data())))
+            .toList()
+          ..sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase())),
+      );
+
+  Stream<List<Setlist>> repertoriosDe(Grupo g) =>
+      _ref(g).collection('repertorios').snapshots().map(
+        (q) => q.docs
+            .where((d) => d.data()['apagada'] != true)
+            .map((d) => Setlist.fromJson(normFirestore(d.data())))
+            .toList()
+          ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase())),
+      );
+
+  /// Põe no grupo cópias destas músicas do acervo (quem põe é o dono da
+  /// cópia). [ja] = de quais músicas do acervo o grupo já tem cópia.
+  Future<void> adicionarAoGrupo(
+    Grupo g,
+    List<Song> doAcervo,
+    Set<String> ja,
+  ) async {
+    for (final v in doAcervo) {
+      if (ja.contains(v.id)) continue;
+      final c = v.copy()
+        ..id = ChordEngine.uid()
+        ..dono = ''
+        ..donoNome = ''
+        ..editores = []
+        ..versao = 0
+        ..por = ''
+        ..porNome = ''
+        ..baseId = v.id
+        ..baseRev = v.versao;
+      if (grupo?.id == g.id) {
+        // em uso: entra pelo app e sobe pelo caminho normal
+        app.upsertSong(c);
+        continue;
+      }
+      c
+        ..dono = eu
+        ..donoNome = nome
+        ..versao = 1
+        ..por = eu
+        ..porNome = nome
+        ..updatedAt = DateTime.now();
+      final ref = _ref(g).collection('musicas').doc(c.id);
+      final b = _db.batch()
+        ..set(ref, {...c.toJson(), 'apagada': false})
+        ..set(ref.collection('versoes').doc(), {
+          'n': 1,
+          'song': c.toJson(),
+          'por': eu,
+          'porNome': nome,
+          'em': FieldValue.serverTimestamp(),
+          'acao': 'criou',
+          'resumo': const <String>[],
+        });
+      await _semEsperar(b.commit());
+    }
+  }
+
+  /// Tira a música do grupo (só quem é dono dela).
+  Future<void> tirarDoGrupo(Grupo g, Song s) async {
+    if (s.dono != eu) return;
+    if (grupo?.id == g.id) {
+      app.deleteSong(s.id);
+      return;
+    }
+    await _semEsperar(
+      _ref(g).collection('musicas').doc(s.id).update({
+        'apagada': true,
+        'apagadaPor': eu,
+        'apagadaPorNome': nome,
+        'updatedAt': DateTime.now().toIso8601String(),
+      }),
     );
   }
 

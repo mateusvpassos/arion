@@ -576,6 +576,20 @@ class AppState extends ChangeNotifier {
     touch();
   }
 
+  /// Tira do aparelho, sem registrar exclusão, o que é de outro grupo da
+  /// nuvem (ao trocar de grupo; continua salvo lá).
+  void esquecer({required Set<String> songs, required Set<String> setlists}) {
+    this.songs.removeWhere((x) => songs.contains(x.id));
+    this.setlists.removeWhere((x) => setlists.contains(x.id));
+    for (final id in songs) {
+      _songSnaps.remove(id);
+    }
+    for (final id in setlists) {
+      _setSnaps.remove(id);
+    }
+    touch();
+  }
+
   Setlist? setlistById(String id) {
     for (final s in setlists) {
       if (s.id == id) return s;

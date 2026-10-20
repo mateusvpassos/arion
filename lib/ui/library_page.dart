@@ -109,6 +109,39 @@ class _LiveButton extends StatelessWidget {
   }
 }
 
+/// "MyMusic" + o grupo em uso (tocar abre a lista de grupos).
+class _TituloComGrupo extends StatelessWidget {
+  const _TituloComGrupo();
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.watch<CloudState>();
+    final g = c.grupo;
+    if (g == null) return const Text('MyMusic');
+    return InkWell(
+      borderRadius: BorderRadius.circular(8),
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const CloudPage()),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('MyMusic'),
+          Text(
+            g.pessoal && g.dono == c.eu ? 'Minha biblioteca ▾' : '${g.nome} ▾',
+            style: TextStyle(
+              fontSize: 12,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class LibraryPage extends StatefulWidget {
   const LibraryPage({super.key});
   @override
@@ -151,7 +184,7 @@ class _LibraryPageState extends State<LibraryPage>
               child: Image.asset('assets/icon/icon.png', width: 32, height: 32),
             ),
             const SizedBox(width: 10),
-            const Text('MyMusic'),
+            const _TituloComGrupo(),
           ],
         ),
         // abas numa cápsula com borda (como no web e no Kino)
@@ -558,7 +591,7 @@ class _CloudButtons extends StatelessWidget {
             ),
           ),
         IconButton(
-          tooltip: 'Conta e compartilhamento',
+          tooltip: 'Grupos',
           icon: Icon(c.ativa ? Icons.group_outlined : Icons.cloud_off_outlined),
           onPressed: () => Navigator.push(
             context,
