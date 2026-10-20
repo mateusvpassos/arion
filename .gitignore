@@ -43,3 +43,6 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# client OAuth do PC (build: --dart-define-from-file=desktop_oauth.json)
+desktop_oauth.json

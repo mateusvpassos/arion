@@ -16,6 +16,7 @@ dependencies:
   googleapis: ^13.2.0
   extension_google_sign_in_as_googleapis_auth: ^2.0.12
   http: ^1.2.2
+  googleapis_auth: ^2.0.0
   wakelock_plus: ^1.2.8
   printing: ^5.13.0
   pdf: ^3.11.1

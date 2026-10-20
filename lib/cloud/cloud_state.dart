@@ -9,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 import '../core/diff.dart';
 import '../data/store.dart';
 import '../models/song.dart';
+import '../sync/desktop_auth.dart';
 import 'cloud_config.dart';
 
 /// Grupo compartilhado na nuvem.
@@ -229,6 +230,20 @@ class CloudState extends ChangeNotifier with WidgetsBindingObserver {
   Future<void> entrar() async {
     erro = null;
     try {
+      if (DesktopAuth.ativo) {
+        // o mesmo login do Drive (client "App para computador", liberado
+        // no Firebase em Authentication > Google > IDs de cliente externos)
+        final d = DesktopAuth.instance;
+        await d.entrar();
+        final accessToken = await d.accessToken();
+        await FirebaseAuth.instance.signInWithCredential(
+          GoogleAuthProvider.credential(
+            idToken: d.idToken,
+            accessToken: accessToken,
+          ),
+        );
+        return;
+      }
       final gsi = GoogleSignIn(
         scopes: const ['email'],
         serverClientId: CloudConfig.webClientId,
@@ -274,7 +289,7 @@ class CloudState extends ChangeNotifier with WidgetsBindingObserver {
     await _gravaPrefs();
     await FirebaseAuth.instance.signOut();
     try {
-      await GoogleSignIn().signOut();
+      if (!DesktopAuth.ativo) await GoogleSignIn().signOut();
     } catch (_) {}
     grupos = [];
     notifyListeners();

@@ -5,6 +5,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:googleapis/drive/v3.dart' as drive;
 import 'package:extension_google_sign_in_as_googleapis_auth/extension_google_sign_in_as_googleapis_auth.dart';
 import '../data/store.dart';
+import 'desktop_auth.dart';
 
 /// Sync da biblioteca com Google Drive (pasta privada appDataFolder).
 class SyncState extends ChangeNotifier {
@@ -21,8 +22,10 @@ class SyncState extends ChangeNotifier {
   String? error;
   Timer? _autoTimer;
 
-  bool get signedIn => account != null;
-  String get email => account?.email ?? '';
+  static final _desk = DesktopAuth.instance;
+
+  bool get signedIn => DesktopAuth.ativo ? _desk.logado : account != null;
+  String get email => DesktopAuth.ativo ? _desk.email : account?.email ?? '';
 
   void setAutoSync(bool v) {
     autoSync = v;
@@ -57,6 +60,11 @@ class SyncState extends ChangeNotifier {
   }
 
   Future<void> trySilent() async {
+    if (DesktopAuth.ativo) {
+      await _desk.silencioso();
+      notifyListeners();
+      return;
+    }
     try {
       account = await _gsi.signInSilently();
       notifyListeners();
@@ -66,6 +74,11 @@ class SyncState extends ChangeNotifier {
   Future<void> signIn() async {
     error = null;
     try {
+      if (DesktopAuth.ativo) {
+        await _desk.entrar();
+        notifyListeners();
+        return;
+      }
       account = await _gsi.signIn();
       notifyListeners();
     } catch (e) {
@@ -75,13 +88,20 @@ class SyncState extends ChangeNotifier {
   }
 
   Future<void> signOut() async {
+    if (DesktopAuth.ativo) {
+      await _desk.sair();
+      notifyListeners();
+      return;
+    }
     await _gsi.signOut();
     account = null;
     notifyListeners();
   }
 
   Future<drive.DriveApi?> _api() async {
-    final client = await _gsi.authenticatedClient();
+    final client = DesktopAuth.ativo
+        ? _desk.client()
+        : await _gsi.authenticatedClient();
     if (client == null) return null;
     return drive.DriveApi(client);
   }
