@@ -66,6 +66,7 @@ Pré-requisitos: Flutter (canal stable). Android: JDK 17 e Android SDK. iOS: Mac
 ```bash
 flutter pub get
 flutter build apk --release          # Android
+flutter build windows --release --dart-define-from-file=desktop_oauth.json   # PC (client OAuth desktop, fora do git)
 flutter build ios --release --no-codesign   # iOS, no Mac
 ```
 
