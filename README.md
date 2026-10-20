@@ -1,6 +1,6 @@
 # 🎵 MyMusic
 
-> Cifras, acordes e letras para uso ao vivo na igreja — pensado para **tablet** (também roda em celular).
+> Cifras, acordes e letras para tocar ao vivo — pensado para **tablet** (também roda em celular).
 
 App feito em **Flutter** (Android e iOS), focado em ser **bonito, rápido e fácil de usar no palco**: marcar músicas, transpor na hora, montar repertórios e virar páginas com um pedal Bluetooth.
 

@@ -469,14 +469,9 @@ class _LibraryPageState extends State<LibraryPage>
 
   void _newSetlist(AppState st) async {
     final ctrl = TextEditingController();
-    // já nasce com a data da próxima Missa de domingo: é o que dá o tempo
-    // litúrgico das sugestões e o histórico de "tocada há X semanas"
+    // data do evento: é o que dá o histórico de "tocada há X semanas"
     final hoje = DateTime.now();
-    var data = DateTime(
-      hoje.year,
-      hoje.month,
-      hoje.day,
-    ).add(Duration(days: (7 - hoje.weekday) % 7));
+    var data = DateTime(hoje.year, hoje.month, hoje.day);
     String fmt(DateTime d) =>
         '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
     final name = await showDialog<String>(
@@ -498,7 +493,7 @@ class _LibraryPageState extends State<LibraryPage>
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.event),
                 title: Text(fmt(data)),
-                subtitle: Text(Liturgia.temposDe(data).first),
+                subtitle: const Text('Data do evento'),
                 trailing: const Icon(Icons.edit_calendar_outlined),
                 onTap: () async {
                   final d = await showDatePicker(

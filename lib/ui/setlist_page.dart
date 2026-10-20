@@ -19,13 +19,9 @@ String _fmtDate(DateTime d) =>
 
 /// Cifras já no tom escolhido no repertório — é isso que tem que sair na
 /// exportação, não o tom original da música.
-/// Com o momento da Missa na frente do título ("Entrada · ...").
 List<Song> _noTomDoRepertorio(Setlist sl, List<Song> songs) => songs.map((s) {
   final steps = sl.transpose[s.id] ?? 0;
-  final c = steps == 0 ? s.copy() : ChordEngine.transposeSong(s, steps);
-  final m = sl.moments[s.id];
-  if (m != null) c.title = '$m · ${c.title}';
-  return c;
+  return steps == 0 ? s.copy() : ChordEngine.transposeSong(s, steps);
 }).toList();
 
 Color _strong(int seed) {
@@ -100,24 +96,6 @@ class SetlistPage extends StatelessWidget {
                   sl.date = d;
                   st.upsertSetlist(sl);
                 }
-              },
-            ),
-          if (pode && sl.moments.isNotEmpty)
-            IconButton(
-              icon: const Icon(Icons.sort),
-              tooltip: 'Ordenar pela ordem da Missa',
-              onPressed: () {
-                // estável: dentro do mesmo momento mantém a ordem atual
-                final ids = List.of(sl.songIds);
-                final pos = {for (var i = 0; i < ids.length; i++) ids[i]: i};
-                ids.sort((a, b) {
-                  final c = Liturgia.ordem(
-                    sl.moments[a],
-                  ).compareTo(Liturgia.ordem(sl.moments[b]));
-                  return c != 0 ? c : pos[a]!.compareTo(pos[b]!);
-                });
-                sl.songIds = ids;
-                st.upsertSetlist(sl);
               },
             ),
           IconButton(
@@ -242,28 +220,13 @@ class SetlistPage extends StatelessWidget {
             },
             itemBuilder: (_, i) {
               final s = songs[i];
-              final momento = sl.moments[s.id];
               return Card(
                 key: ValueKey(s.id),
                 margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
                 child: ListTile(
                   leading: CircleAvatar(child: Text('${i + 1}')),
-                  title: Text.rich(
-                    TextSpan(
-                      children: [
-                        if (momento != null)
-                          TextSpan(
-                            text: '${momento.toUpperCase()}   ',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.8,
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                          ),
-                        TextSpan(text: s.title),
-                      ],
-                    ),
+                  title: Text(
+                    s.title,
                     style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                   subtitle: Text(
@@ -274,16 +237,6 @@ class SetlistPage extends StatelessWidget {
                       : Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            IconButton(
-                              icon: Icon(
-                                momento == null
-                                    ? Icons.label_outline
-                                    : Icons.label,
-                              ),
-                              tooltip: 'Momento da Missa',
-                              onPressed: () =>
-                                  _escolherMomento(context, st, sl, s),
-                            ),
                             IconButton(
                               icon: const Icon(Icons.remove_circle_outline),
                               onPressed: () {
@@ -310,68 +263,9 @@ class SetlistPage extends StatelessWidget {
           );
   }
 
-  Future<void> _escolherMomento(
-    BuildContext context,
-    AppState st,
-    Setlist sl,
-    Song s,
-  ) async {
-    final atual = sl.moments[s.id];
-    final r = await showModalBottomSheet<String>(
-      context: context,
-      showDragHandle: true,
-      builder: (_) => SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                s.title,
-                style: const TextStyle(fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children: [
-                  for (final m in Liturgia.momentos)
-                    ChoiceChip(
-                      label: Text(m),
-                      selected: m == atual,
-                      // momentos marcados na própria música em destaque
-                      avatar: s.momentos.contains(m) && m != atual
-                          ? const Icon(Icons.star, size: 16)
-                          : null,
-                      onSelected: (_) => Navigator.pop(context, m),
-                    ),
-                  if (atual != null)
-                    ActionChip(
-                      avatar: const Icon(Icons.close, size: 16),
-                      label: const Text('Sem momento'),
-                      onPressed: () => Navigator.pop(context, ''),
-                    ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-    if (r == null) return;
-    if (r.isEmpty) {
-      sl.moments.remove(s.id);
-    } else {
-      sl.moments[s.id] = r;
-    }
-    st.upsertSetlist(sl);
-  }
-
   void _addSongs(BuildContext context, AppState st, Setlist sl) {
-    // data da Missa (ou hoje) define o tempo litúrgico das sugestões
     final data = sl.date ?? DateTime.now();
-    final tempos = Liturgia.temposDe(data);
-    // uso ANTES desta Missa, sem contar o próprio repertório
+    // uso ANTES da data do repertório, sem contar ele mesmo
     final uso = UsoMusicas.calcula(st.setlists, ate: data, exceto: sl.id);
     showModalBottomSheet(
       context: context,
@@ -379,13 +273,10 @@ class SetlistPage extends StatelessWidget {
       isScrollControlled: true,
       builder: (_) {
         var busca = '';
-        String? momento; // filtro
-        var soTempo = true;
+        String? tag; // filtro
         return StatefulBuilder(
           builder: (context, setSheet) {
             final scheme = Theme.of(context).colorScheme;
-            bool especifica(Song s) => s.tempos.any(tempos.contains);
-            bool doTempo(Song s) => s.tempos.isEmpty || especifica(s);
             // minhas músicas + as do acervo que ainda não tenho (marcar puxa a cópia)
             final ac = context.read<AcervoState>();
             final doAcervo = [
@@ -393,25 +284,17 @@ class SetlistPage extends StatelessWidget {
                 if (ac.copiaDaObra(e.key) == null) e.value.first,
             ];
             bool daBiblioteca(Song s) => st.songById(s.id) != null;
-            var achadas = SongSearch.run([...st.songs, ...doAcervo], busca);
-            if (momento != null) {
-              achadas = achadas
-                  .where((h) => h.song.momentos.contains(momento))
-                  .toList();
+            final todas = [...st.songs, ...doAcervo];
+            final tags = {for (final s in todas) ...s.tags}.toList()..sort();
+            var achadas = SongSearch.run(todas, busca);
+            if (tag != null) {
+              achadas = achadas.where((h) => h.song.tags.contains(tag)).toList();
             }
             if (busca.trim().isEmpty) {
-              if (soTempo) {
-                achadas = achadas.where((h) => doTempo(h.song)).toList();
-              }
-              // primeiro as do tempo; depois as que faz mais tempo que não toca
+              // primeiro as que faz mais tempo que não toca
               DateTime quando(Song s) =>
                   uso[s.id]?.ultima ?? DateTime.utc(1900);
-              achadas.sort((a, b) {
-                final ea = especifica(a.song) ? 0 : 1;
-                final eb = especifica(b.song) ? 0 : 1;
-                if (ea != eb) return ea.compareTo(eb);
-                return quando(a.song).compareTo(quando(b.song));
-              });
+              achadas.sort((a, b) => quando(a.song).compareTo(quando(b.song)));
             }
             return DraggableScrollableSheet(
               expand: false,
@@ -430,43 +313,30 @@ class SetlistPage extends StatelessWidget {
                       onChanged: (v) => setSheet(() => busca = v),
                     ),
                   ),
-                  SizedBox(
-                    height: 44,
-                    child: ListView(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      children: [
-                        FilterChip(
-                          avatar: const Icon(Icons.church_outlined, size: 16),
-                          label: Text(tempos.first),
-                          tooltip:
-                              'Só cantos de ${tempos.first} (${_fmtDate(data)}) '
-                              'ou sem tempo marcado',
-                          selected: soTempo,
-                          onSelected: (v) => setSheet(() => soTempo = v),
-                        ),
-                        const SizedBox(width: 12),
-                        for (final m in Liturgia.momentos) ...[
-                          ChoiceChip(
-                            label: Text(m),
-                            selected: momento == m,
-                            onSelected: (v) =>
-                                setSheet(() => momento = v ? m : null),
-                          ),
-                          const SizedBox(width: 4),
+                  if (tags.isNotEmpty)
+                    SizedBox(
+                      height: 44,
+                      child: ListView(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        children: [
+                          for (final t in tags) ...[
+                            ChoiceChip(
+                              label: Text(t),
+                              selected: tag == t,
+                              onSelected: (v) => setSheet(() => tag = v ? t : null),
+                            ),
+                            const SizedBox(width: 4),
+                          ],
                         ],
-                      ],
+                      ),
                     ),
-                  ),
                   if (achadas.isEmpty)
                     Padding(
                       padding: const EdgeInsets.all(24),
                       child: Text(
-                        momento != null
-                            ? 'Nenhum canto marcado p/ "$momento"'
-                                  '${soTempo ? ' em ${tempos.first}' : ''}.\n'
-                                  'Marque na edição da música (tempo litúrgico '
-                                  'e momento da Missa).'
+                        tag != null
+                            ? 'Nenhuma música com a tag "$tag".'
                             : 'Nenhuma música encontrada.',
                         textAlign: TextAlign.center,
                         style: TextStyle(color: scheme.onSurfaceVariant),
@@ -488,9 +358,7 @@ class SetlistPage extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      secondary: especifica(h.song)
-                          ? Icon(Icons.church, size: 18, color: scheme.primary)
-                          : !daBiblioteca(h.song)
+                      secondary: !daBiblioteca(h.song)
                           ? Tooltip(
                               message: 'Do acervo geral — entra nas suas músicas ao marcar',
                               child: Icon(Icons.public, size: 18, color: scheme.outline),
@@ -502,13 +370,6 @@ class SetlistPage extends StatelessWidget {
                             : ac.puxar(h.song).id;
                         if (v == true) {
                           if (!sl.songIds.contains(id)) sl.songIds.add(id);
-                          // momento: o do filtro, ou o único da música
-                          final m =
-                              momento ??
-                              (h.song.momentos.length == 1
-                                  ? h.song.momentos.first
-                                  : null);
-                          if (m != null) sl.moments[id] = m;
                         } else {
                           sl.songIds.remove(id);
                           sl.moments.remove(id);

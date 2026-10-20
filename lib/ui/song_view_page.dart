@@ -515,9 +515,6 @@ class _SongViewPageState extends State<SongViewPage>
             acervo.versoesDaObra(AcervoState.obraDe(origem)).length > 1
         ? AcervoState.rotulo(origem)
         : null;
-    final momento = widget.setlistId == null
-        ? null
-        : st.setlistById(widget.setlistId!)?.moments[_songId];
     final scheme = Theme.of(context).colorScheme;
     // modo claro: primary do M3 fica pastel — usa versão saturada/forte
     final chordColor = st.settings.dark ? scheme.primary : _strongColor();
@@ -544,7 +541,6 @@ class _SongViewPageState extends State<SongViewPage>
                     ),
                     Text(
                       '${doAcervo ? 'acervo geral${base.dono != context.read<CloudState>().eu ? ' · de ${acervo.nomeDe(base.dono)}' : ''}  •  ' : ''}'
-                      '${momento != null ? '$momento  •  ' : ''}'
                       '${versaoAcervo != null ? '$versaoAcervo  •  ' : ''}'
                       '${shown.key}'
                       '${base.capo > 0 ? '  •  capo ${base.capo}${_capo ? '' : ' (off)'}' : ''}'
