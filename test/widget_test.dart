@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mymusic/core/chord_engine.dart';
-import 'package:mymusic/models/song.dart';
+import 'package:arion/core/chord_engine.dart';
+import 'package:arion/models/song.dart';
 
 void main() {
   test('parse + serialize roundtrip', () {

@@ -172,7 +172,7 @@ class LiveSession extends ChangeNotifier {
     if (!WebSocketTransformer.isUpgradeRequest(req)) {
       req.response
         ..statusCode = HttpStatus.ok
-        ..write('MyMusic ao vivo')
+        ..write('Arion ao vivo')
         ..close();
       return;
     }
@@ -222,7 +222,7 @@ class LiveSession extends ChangeNotifier {
       _beaconTimer = Timer.periodic(const Duration(seconds: 2), (_) {
         final b = utf8.encode(
           jsonEncode({
-            'app': 'mymusic',
+            'app': 'arion',
             'v': _proto,
             'name': myName,
             'port': serverPort,
@@ -285,12 +285,12 @@ class LiveSession extends ChangeNotifier {
     if (!active) _multicastLock(false);
   }
 
-  /// Beacon -> sessão encontrada (null se não for do MyMusic).
+  /// Beacon -> sessão encontrada (null se não for do Arion).
   @visibleForTesting
   static FoundHost? parseBeacon(List<int> data, String from) {
     try {
       final j = jsonDecode(utf8.decode(data)) as Map<String, dynamic>;
-      if (j['app'] != 'mymusic' || j['port'] is! int) return null;
+      if (j['app'] != 'arion' || j['port'] is! int) return null;
       return FoundHost(
         from,
         j['port'] as int,
@@ -303,7 +303,7 @@ class LiveSession extends ChangeNotifier {
     }
   }
 
-  static const _net = MethodChannel('mymusic/net');
+  static const _net = MethodChannel('arion/net');
   static Future<void> _multicastLock(bool on) async {
     // Android descarta broadcast/multicast sem a trava; fora do Android a
     // chamada só falha e tudo segue

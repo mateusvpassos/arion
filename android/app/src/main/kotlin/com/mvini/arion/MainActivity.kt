@@ -1,4 +1,4 @@
-package com.mvini.mymusic
+package com.mvini.arion
 
 import android.content.Context
 import android.net.wifi.WifiManager
@@ -13,14 +13,14 @@ class MainActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "mymusic/net")
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "arion/net")
             .setMethodCallHandler { call, result ->
                 when (call.method) {
                     "acquireMulticast" -> {
                         if (lock == null) {
                             val wifi = applicationContext
                                 .getSystemService(Context.WIFI_SERVICE) as WifiManager
-                            lock = wifi.createMulticastLock("mymusic-live").apply {
+                            lock = wifi.createMulticastLock("arion-live").apply {
                                 setReferenceCounted(false)
                                 acquire()
                             }

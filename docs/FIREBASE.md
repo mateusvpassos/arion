@@ -30,14 +30,14 @@ configuração (Android e Web) e eu coloco no app e no editor web.
 ## 4. Registrar o app Android
 
 1. Engrenagem ⚙ → **Configurações do projeto** → em "Seus apps", ícone do **Android**.
-2. Nome do pacote: `com.mvini.mymusic`. Apelido: MyMusic. (SHA-1 não precisa
+2. Nome do pacote: `com.mvini.arion`. Apelido: Arion Android. (SHA-1 não precisa
    agora.) **Registrar app**.
 3. Baixe o **google-services.json** e me mande (ou copie os valores
    `mobilesdk_app_id`, `current_key` e `project_id`). Pode pular os outros passos do assistente.
 
 ## 5. Registrar o editor web
 
-1. Mesma tela → **Adicionar app** → ícone **Web** (`</>`). Apelido: MyMusic web.
+1. Mesma tela → **Adicionar app** → ícone **Web** (`</>`). Apelido: Arion Web.
    **Não** marque Firebase Hosting. Registrar.
 2. Copie o bloco `const firebaseConfig = { ... }` que aparece e me mande.
 

@@ -25,7 +25,7 @@ class Letras {
           .get(
             _uri.replace(queryParameters: {'q': q}),
             // o LRCLIB pede p/ identificar o app
-            headers: {'User-Agent': 'MyMusic (cifras e repertorios)'},
+            headers: {'User-Agent': 'Arion (cifras e repertorios)'},
           )
           .timeout(const Duration(seconds: 15));
       if (r.statusCode != 200) throw 'O site de letras respondeu ${r.statusCode}';

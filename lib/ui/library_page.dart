@@ -109,7 +109,7 @@ class _LiveButton extends StatelessWidget {
   }
 }
 
-/// "MyMusic" + o grupo em uso (tocar abre a lista de grupos).
+/// "Arion" + o grupo em uso (tocar abre a lista de grupos).
 class _TituloComGrupo extends StatelessWidget {
   const _TituloComGrupo();
 
@@ -117,7 +117,7 @@ class _TituloComGrupo extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.watch<CloudState>();
     final g = c.grupo;
-    if (g == null) return const Text('MyMusic');
+    if (g == null) return const Text('Arion');
     return InkWell(
       borderRadius: BorderRadius.circular(8),
       onTap: () => Navigator.push(
@@ -128,7 +128,7 @@ class _TituloComGrupo extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('MyMusic'),
+          const Text('Arion'),
           Text(
             g.pessoal && g.dono == c.eu ? 'Minha biblioteca ▾' : '${g.nome} ▾',
             style: TextStyle(

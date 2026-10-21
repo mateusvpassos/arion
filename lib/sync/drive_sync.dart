@@ -9,7 +9,7 @@ import 'desktop_auth.dart';
 
 /// Sync da biblioteca com Google Drive (pasta privada appDataFolder).
 class SyncState extends ChangeNotifier {
-  static const _fileName = 'mymusic_data.json';
+  static const _fileName = 'arion_data.json';
 
   final GoogleSignIn _gsi = GoogleSignIn(
     scopes: const [drive.DriveApi.driveAppdataScope],

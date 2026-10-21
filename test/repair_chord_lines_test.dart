@@ -1,9 +1,9 @@
 // Padrões reais achados na biblioteca do usuário (gravados antes de 7M ser
 // reconhecido): linha de acorde salva como letra.
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mymusic/core/chord_engine.dart';
-import 'package:mymusic/data/store.dart';
-import 'package:mymusic/models/song.dart';
+import 'package:arion/core/chord_engine.dart';
+import 'package:arion/data/store.dart';
+import 'package:arion/models/song.dart';
 
 SongLine t(String s) => SongLine(s, []);
 

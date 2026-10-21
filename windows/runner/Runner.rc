@@ -89,13 +89,13 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "com.mymusic" "\0"
-            VALUE "FileDescription", "MyMusic" "\0"
+            VALUE "CompanyName", "com.mvini.arion" "\0"
+            VALUE "FileDescription", "Arion" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "mymusic" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2026 com.mymusic. All rights reserved." "\0"
-            VALUE "OriginalFilename", "mymusic.exe" "\0"
-            VALUE "ProductName", "MyMusic" "\0"
+            VALUE "InternalName", "arion" "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026 com.mvini.arion. All rights reserved." "\0"
+            VALUE "OriginalFilename", "arion.exe" "\0"
+            VALUE "ProductName", "Arion" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

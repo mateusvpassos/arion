@@ -2,9 +2,9 @@
 // o app gerou no tablet. Servem p/ travar o comportamento do layout de coluna.
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mymusic/core/chord_engine.dart';
-import 'package:mymusic/core/pdf_export.dart';
-import 'package:mymusic/models/song.dart';
+import 'package:arion/core/chord_engine.dart';
+import 'package:arion/core/pdf_export.dart';
+import 'package:arion/models/song.dart';
 
 // 5 seções nomeadas.
 const _estaremos = '''

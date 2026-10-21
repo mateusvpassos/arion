@@ -67,7 +67,13 @@ class AppState extends ChangeNotifier {
 
   Future<void> load() async {
     final dir = await getApplicationDocumentsDirectory();
-    _file = File('${dir.path}/mymusic_data.json');
+    _file = File('${dir.path}/arion_data.json');
+    // antes do nome Arion o arquivo era mymusic_data.json (no PC fica na mesma
+    // pasta Documentos): traz ele p/ não perder nada
+    final antigo = File('${dir.path}/mymusic_data.json');
+    if (!await _file!.exists() && await antigo.exists()) {
+      await antigo.copy(_file!.path);
+    }
     var reparadas = 0;
     if (await _file!.exists()) {
       try {
@@ -721,7 +727,7 @@ class AppState extends ChangeNotifier {
 
   Future<String> writeBackupFile() async {
     final dir = await getApplicationDocumentsDirectory();
-    final f = File('${dir.path}/mymusic_backup.json');
+    final f = File('${dir.path}/arion_backup.json');
     await f.writeAsString(exportJson());
     return f.path;
   }

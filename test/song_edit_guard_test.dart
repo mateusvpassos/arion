@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mymusic/cloud/acervo.dart';
-import 'package:mymusic/cloud/cloud_state.dart';
-import 'package:mymusic/data/store.dart';
-import 'package:mymusic/models/song.dart';
-import 'package:mymusic/ui/song_edit_page.dart';
+import 'package:arion/cloud/acervo.dart';
+import 'package:arion/cloud/cloud_state.dart';
+import 'package:arion/data/store.dart';
+import 'package:arion/models/song.dart';
+import 'package:arion/ui/song_edit_page.dart';
 import 'package:provider/provider.dart';
 
 Widget _app(AppState st, Widget page) => MultiProvider(

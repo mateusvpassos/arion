@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mymusic/core/chord_engine.dart';
+import 'package:arion/core/chord_engine.dart';
 
 void main() {
   test('acorde final do Cifra Club junta na linha e some a duplicata', () {

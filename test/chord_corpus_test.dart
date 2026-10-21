@@ -1,8 +1,8 @@
 // Corpus de cifras do mundo real: formatos que aparecem colando do Cifra
 // Club, de PDF de folheto de missa, de WhatsApp, de arquivo ChordPro etc.
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mymusic/core/chord_engine.dart';
-import 'package:mymusic/models/song.dart';
+import 'package:arion/core/chord_engine.dart';
+import 'package:arion/models/song.dart';
 
 List<SongLine> _lines(String txt) =>
     ChordEngine.importText(txt).expand((s) => s.lines).toList();

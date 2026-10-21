@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mymusic/core/liturgia.dart';
-import 'package:mymusic/models/song.dart';
-import 'package:mymusic/ui/widgets/chord_chart.dart';
+import 'package:arion/core/liturgia.dart';
+import 'package:arion/models/song.dart';
+import 'package:arion/ui/widgets/chord_chart.dart';
 
 void main() {
   DateTime d(int y, int m, int dd) => DateTime(y, m, dd);

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Visual da família Kino/Strata (igual ao MyMusic web): grafite quase
+/// Visual da família Kino/Strata (igual ao Arion web): grafite quase
 /// preto, Geist, bordas finas e o destaque vindo da cor escolhida (verde da
 /// marca por padrão).
 class Tema {

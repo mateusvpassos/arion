@@ -3,7 +3,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mymusic/core/chord_engine.dart';
+import 'package:arion/core/chord_engine.dart';
 
 String dump(String txt) => ChordEngine.importText(txt)
     .map((s) => '${s.name}:${s.lines.map((l) => '${l.lyric.trimRight()}'

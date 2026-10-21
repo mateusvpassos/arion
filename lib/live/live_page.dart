@@ -272,7 +272,7 @@ class _LivePageState extends State<LivePage> {
         'Todos precisam estar na mesma rede Wi-Fi (pode ser o roteador do celular). '
         'Se a sessão não aparecer na lista, a rede bloqueia a busca: use "Digitar '
         'código" com o código que aparece no aparelho que criou a sessão (no '
-        'computador, MyMusic web › Ao vivo, também é pelo código).\n\n'
+        'computador, Arion web › Ao vivo, também é pelo código).\n\n'
         'Editar uma música ou repertório em qualquer aparelho atualiza os outros. '
         'Excluir só apaga no próprio aparelho.',
         style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12),

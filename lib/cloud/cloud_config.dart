@@ -13,7 +13,7 @@ class CloudConfig {
   /// Client OAuth "Web" do projeto Google — o login do Android pede o
   /// idToken com ele como público.
   static const webClientId =
-      '333951307134-ttuhelsl1nfrbrfsd21i3a783falt8s9.apps.googleusercontent.com';
+      '911820467893-lbvoe3a9eqljcn9ip19rlm4r8hnn30rf.apps.googleusercontent.com';
 
   static FirebaseOptions? get options {
     if (emulador) {
@@ -21,7 +21,7 @@ class CloudConfig {
         apiKey: 'demo-key',
         appId: '1:1:android:1',
         messagingSenderId: '1',
-        projectId: 'demo-mymusic',
+        projectId: 'demo-arion',
       );
     }
     switch (defaultTargetPlatform) {

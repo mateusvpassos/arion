@@ -1,6 +1,6 @@
 rules_version = '2';
 
-// MyMusic — biblioteca compartilhada por grupo (banda, coral, ministério...).
+// Arion — biblioteca compartilhada por grupo (banda, coral, ministério...).
 //
 // acervo/{id}                      acervo geral: quem está liberado vê; dono + editores mudam
 // acervo/{id}/versoes/{n}          histórico de cada música do acervo (imutável)

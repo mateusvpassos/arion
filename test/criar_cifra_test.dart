@@ -2,9 +2,9 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:mymusic/core/chord_engine.dart';
-import 'package:mymusic/core/letras.dart';
-import 'package:mymusic/models/song.dart';
+import 'package:arion/core/chord_engine.dart';
+import 'package:arion/core/letras.dart';
+import 'package:arion/models/song.dart';
 
 void main() {
   group('campoHarmonico', () {

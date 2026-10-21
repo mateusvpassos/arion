@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mymusic/core/diff.dart';
-import 'package:mymusic/models/song.dart';
+import 'package:arion/core/diff.dart';
+import 'package:arion/models/song.dart';
 
 void main() {
   test('diff por linha', () {

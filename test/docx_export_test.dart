@@ -3,9 +3,9 @@ import 'dart:io';
 import 'package:archive/archive.dart';
 import 'package:flutter/material.dart' show Colors;
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mymusic/core/chord_engine.dart';
-import 'package:mymusic/core/docx_export.dart';
-import 'package:mymusic/models/song.dart';
+import 'package:arion/core/chord_engine.dart';
+import 'package:arion/core/docx_export.dart';
+import 'package:arion/models/song.dart';
 
 const _cifra = '''
 #Refrão

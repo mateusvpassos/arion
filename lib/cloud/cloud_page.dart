@@ -55,7 +55,7 @@ class _CloudPageState extends State<CloudPage> {
               titulo: 'Acesso ainda não liberado',
               children: [
                 Text(
-                  'Peça p/ alguém que já usa o MyMusic te adicionar num grupo '
+                  'Peça p/ alguém que já usa o Arion te adicionar num grupo '
                   '(pelo e-mail ${c.eu}). Ao ser adicionado, o seu acesso é liberado.',
                 ),
                 const SizedBox(height: 12),

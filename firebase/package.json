@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
-    "test": "firebase emulators:exec --only firestore --project demo-mymusic \"node --test rules.test.mjs\"",
-    "emu": "firebase emulators:start --project demo-mymusic"
+    "test": "firebase emulators:exec --only firestore --project demo-arion \"node --test rules.test.mjs\"",
+    "emu": "firebase emulators:start --project demo-arion"
   },
   "keywords": [],
   "author": "",

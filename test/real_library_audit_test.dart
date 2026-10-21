@@ -3,10 +3,10 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mymusic/core/chord_engine.dart';
-import 'package:mymusic/core/pdf_export.dart';
-import 'package:mymusic/data/store.dart';
-import 'package:mymusic/models/song.dart';
+import 'package:arion/core/chord_engine.dart';
+import 'package:arion/core/pdf_export.dart';
+import 'package:arion/data/store.dart';
+import 'package:arion/models/song.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized(); // fontes do PDF vêm dos assets

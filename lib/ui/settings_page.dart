@@ -159,7 +159,7 @@ class SettingsPage extends StatelessWidget {
           if (!CloudConfig.ligado) _card('Google Drive', [_drive(context, st)]),
           const SizedBox(height: 16),
           Center(
-            child: Text('MyMusic', style: TextStyle(color: Theme.of(context).hintColor)),
+            child: Text('Arion', style: TextStyle(color: Theme.of(context).hintColor)),
           ),
         ],
       ),

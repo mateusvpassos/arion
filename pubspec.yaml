@@ -1,5 +1,5 @@
-name: mymusic
-description: "Cifras, acordes e letras para uso na igreja — tablet-first."
+name: arion
+description: "Arion — cifras, acordes e repertórios p/ tocar ao vivo, tablet-first."
 publish_to: 'none'
 version: 1.0.0+1
 

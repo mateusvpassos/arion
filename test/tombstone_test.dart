@@ -1,8 +1,8 @@
 // Exclusão via sync: sem lápide, o sync baixava a música apagada de volta.
 import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mymusic/data/store.dart';
-import 'package:mymusic/models/song.dart';
+import 'package:arion/data/store.dart';
+import 'package:arion/models/song.dart';
 
 Song s(String id, DateTime at) => Song(id: id, title: id, updatedAt: at);
 

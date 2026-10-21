@@ -19,11 +19,11 @@ class DesktopAuth {
   /// Client OAuth tipo "App para computador" do mesmo projeto Google do
   /// webClientId. Em app instalado o secret não é sigilo (vai no binário).
   static const _id = String.fromEnvironment(
-    'MYMUSIC_DESKTOP_ID',
+    'ARION_DESKTOP_ID',
     defaultValue: '',
   );
   static const _secret = String.fromEnvironment(
-    'MYMUSIC_DESKTOP_SECRET',
+    'ARION_DESKTOP_SECRET',
     defaultValue: '',
   );
   static bool get configurado => _id.isNotEmpty;

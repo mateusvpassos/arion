@@ -1,4 +1,4 @@
-# 🎵 MyMusic
+# 🎵 Arion
 
 > Cifras, acordes e letras para tocar ao vivo — pensado para **tablet** (também roda em celular).
 
@@ -87,7 +87,7 @@ flutter run                 # Android
 flutter run -d ios          # iPhone/iPad, no Mac
 ```
 
-O alvo iOS usa o mesmo código do Android (`lib/`). Bundle: `com.mvini.mymusic`. No Mac, abra `ios/Runner.xcworkspace` no Xcode. A sessão ao vivo na rede local já está liberada no `Info.plist`. Login Google e o grupo Firebase no iOS ficam desligados até registrar o app iOS no Firebase e criar um OAuth Client tipo iOS — sem isso o app abre e funciona offline.
+O alvo iOS usa o mesmo código do Android (`lib/`). Bundle: `com.mvini.arion`. No Mac, abra `ios/Runner.xcworkspace` no Xcode. A sessão ao vivo na rede local já está liberada no `Info.plist`. Login Google e o grupo Firebase no iOS ficam desligados até registrar o app iOS no Firebase e criar um OAuth Client tipo iOS — sem isso o app abre e funciona offline.
 
 Testes do motor de cifras:
 ```bash
@@ -99,7 +99,7 @@ flutter test
 ## ☁️ Configurar o sync com Google Drive (opcional)
 
 1. No [Google Cloud Console](https://console.cloud.google.com): crie um **OAuth Client tipo Android**
-   - Pacote: `com.mvini.mymusic`
+   - Pacote: `com.mvini.arion`
    - SHA-1 da sua keystore (`keytool -list -v -keystore <keystore>`)
 2. Ative a **Google Drive API**
 3. Na **tela de consentimento OAuth**: adicione o escopo `.../auth/drive.appdata` e seu e-mail como **usuário de teste**

@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mymusic/core/chord_engine.dart';
-import 'package:mymusic/models/song.dart';
-import 'package:mymusic/ui/widgets/chord_chart.dart';
+import 'package:arion/core/chord_engine.dart';
+import 'package:arion/models/song.dart';
+import 'package:arion/ui/widgets/chord_chart.dart';
 
 SongLine _l(String chords, String lyric) =>
     ChordEngine.importText('$chords\n$lyric').single.lines.single;

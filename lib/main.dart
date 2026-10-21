@@ -71,7 +71,7 @@ class MyApp extends StatelessWidget {
       child: Consumer<AppState>(
         builder: (context, st, _) {
           return MaterialApp(
-            title: 'MyMusic',
+            title: 'Arion',
             debugShowCheckedModeBanner: false,
             theme: Tema.de(st.settings.seedColor, st.settings.dark),
             home: const LiveFollower(child: LibraryPage()),

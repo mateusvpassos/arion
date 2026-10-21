@@ -4,9 +4,9 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mymusic/data/store.dart';
-import 'package:mymusic/live/live_session.dart';
-import 'package:mymusic/models/song.dart';
+import 'package:arion/data/store.dart';
+import 'package:arion/live/live_session.dart';
+import 'package:arion/models/song.dart';
 
 Future<void> until(bool Function() ok, {String what = ''}) async {
   for (var i = 0; i < 100; i++) {
@@ -203,7 +203,7 @@ void main() {
 
   test('beacon: só aceita o do MyMusic', () {
     final ok = LiveSession.parseBeacon(
-        utf8.encode(jsonEncode({'app': 'mymusic', 'v': 1, 'name': 'Hub', 'port': 47800, 'peers': 2})),
+        utf8.encode(jsonEncode({'app': 'arion', 'v': 1, 'name': 'Hub', 'port': 47800, 'peers': 2})),
         '192.168.0.9');
     expect(ok?.address, '192.168.0.9');
     expect(ok?.port, 47800);

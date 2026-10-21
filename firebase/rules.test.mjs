@@ -23,7 +23,7 @@ const musica = (dono, extra = {}) => ({
 
 before(async () => {
   env = await initializeTestEnvironment({
-    projectId: 'demo-mymusic',
+    projectId: 'demo-arion',
     firestore: { rules: readFileSync('firestore.rules', 'utf8'), host: '127.0.0.1', port: 8188 },
   });
 });
