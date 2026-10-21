@@ -47,7 +47,26 @@ class _CloudPageState extends State<CloudPage> {
             )
           else if (c.user == null)
             _entrar(context, c)
-          else ...[
+          else if (c.liberado == false) ...[
+            _conta(context, c),
+            _card(
+              context,
+              icon: Icons.lock_clock_outlined,
+              titulo: 'Acesso ainda não liberado',
+              children: [
+                Text(
+                  'Peça p/ alguém que já usa o MyMusic te adicionar num grupo '
+                  '(pelo e-mail ${c.eu}). Ao ser adicionado, o seu acesso é liberado.',
+                ),
+                const SizedBox(height: 12),
+                FilledButton.icon(
+                  onPressed: c.conferirLiberacao,
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Já me adicionaram'),
+                ),
+              ],
+            ),
+          ] else ...[
             _conta(context, c),
             _grupos(context, c),
             _envio(context, c),

@@ -264,6 +264,12 @@ class _LibraryPageState extends State<LibraryPage>
     final a = context.watch<AcervoState>();
     final cloud = context.watch<CloudState>();
     final scheme = Theme.of(context).colorScheme;
+    if (a.esperandoLiberacao) {
+      return _empty(
+        'Acesso ainda não liberado: peça p/ alguém que usa o app te adicionar num grupo',
+        Icons.lock_clock_outlined,
+      );
+    }
     if (!a.ligado) {
       return _empty('Entre com o Google (ícone de pessoas lá em cima)', Icons.public);
     }

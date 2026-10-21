@@ -10,6 +10,8 @@ import {
 } from 'firebase/firestore';
 
 const DONO = 'mateus@x.com', ANA = 'ana@x.com', BIA = 'bia@x.com', FORA = 'intruso@x.com';
+// dono do app (liberado sem precisar de ninguém), igual ao admin() das regras
+const ADMIN = 'mviniciusdospassos@gmail.com';
 let env;
 
 const db = (email) => env.authenticatedContext(email.split('@')[0], { email }).firestore();
@@ -32,6 +34,8 @@ beforeEach(async () => {
     const f = ctx.firestore();
     await setDoc(doc(f, 'grupos', g), { nome: 'Ministério', dono: DONO, membros: [DONO, ANA, BIA] });
     await setDoc(doc(f, `grupos/${g}/musicas/m1`), musica(DONO));
+    // quem usa o app já foi liberado; FORA só tem login Google
+    for (const e of [DONO, ANA, BIA]) await setDoc(doc(f, 'liberados', e), { por: ADMIN });
   });
 });
 
@@ -120,11 +124,43 @@ test('apagar de verdade não pode (vira lápide)', async () => {
 
 // ---------------- acervo geral ----------------
 
-test('acervo: qualquer logado lê; ninguém sem login', async () => {
+test('acervo: liberado lê; só login Google não; ninguém sem login', async () => {
   await env.withSecurityRulesDisabled((ctx) =>
     setDoc(doc(ctx.firestore(), 'acervo/a1'), musica(DONO, { id: 'a1' })));
-  await assertSucceeds(getDoc(doc(db(FORA), 'acervo/a1')));
+  await assertSucceeds(getDoc(doc(db(BIA), 'acervo/a1')));
+  await assertFails(getDoc(doc(db(FORA), 'acervo/a1')));
+  await assertFails(getDocs(collection(db(FORA), 'acervo')));
   await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(), 'acervo/a1')));
+});
+
+// ---------------- liberação (login aberto, nuvem só p/ liberados) ----------------
+
+test('não liberado: não cria grupo, não grava no acervo, só vê se está liberado', async () => {
+  await assertFails(setDoc(doc(db(FORA), 'grupos/g9'), { nome: 'x', dono: FORA, membros: [FORA] }));
+  await assertFails(setDoc(doc(db(FORA), 'acervo/a9'), musica(FORA, { id: 'a9' })));
+  await assertFails(setDoc(doc(db(FORA), `pessoas/${FORA}`), { nome: 'x' }));
+  await assertSucceeds(getDoc(doc(db(FORA), 'liberados', FORA)));
+  await assertFails(getDoc(doc(db(FORA), 'liberados', ANA)));
+  // não se libera sozinho
+  await assertFails(setDoc(doc(db(FORA), 'liberados', FORA), { por: FORA }));
+});
+
+test('liberado libera outro (ao convidar) e aí ele usa', async () => {
+  await assertFails(setDoc(doc(db(ANA), 'liberados', FORA), { por: DONO })); // em nome de outro
+  await assertFails(setDoc(doc(db(ANA), 'liberados', FORA), { por: ANA, admin: true })); // campo a mais
+  await assertFails(setDoc(doc(db(ANA), 'liberados', 'Intruso@X.com'), { por: ANA })); // e-mail fora do padrão
+  await assertSucceeds(setDoc(doc(db(ANA), 'liberados', FORA), { por: ANA }));
+  await assertSucceeds(setDoc(doc(db(FORA), 'grupos/g9'), { nome: 'x', dono: FORA, membros: [FORA] }));
+  // tirar a liberação e listar quem está liberado: só o dono do app
+  await assertFails(deleteDoc(doc(db(ANA), 'liberados', FORA)));
+  await assertFails(getDocs(collection(db(ANA), 'liberados')));
+  await assertSucceeds(getDocs(collection(db(ADMIN), 'liberados')));
+  await assertSucceeds(deleteDoc(doc(db(ADMIN), 'liberados', FORA)));
+});
+
+test('dono do app começa liberado sem documento', async () => {
+  await assertSucceeds(setDoc(doc(db(ADMIN), 'grupos/g8'), { nome: 'x', dono: ADMIN, membros: [ADMIN] }));
+  await assertSucceeds(getDocs(collection(db(ADMIN), 'acervo')));
 });
 
 test('acervo: cria como dono; outro não edita, sugere; dono decide', async () => {
@@ -165,8 +201,9 @@ test('sessão ao vivo: abre por código, não lista, só o dono mexe', async () 
   await assertSucceeds(setDoc(doc(db(DONO), 'sessoes/1234'), s));
   await assertFails(setDoc(doc(db(DONO), 'sessoes/12a4'), s));
   await assertFails(setDoc(doc(db(ANA), 'sessoes/5555'), s)); // em nome de outro
-  await assertSucceeds(getDoc(doc(db(FORA), 'sessoes/1234')));
-  await assertFails(getDocs(collection(db(FORA), 'sessoes')));
+  await assertSucceeds(getDoc(doc(db(BIA), 'sessoes/1234')));
+  await assertFails(getDoc(doc(db(FORA), 'sessoes/1234'))); // não liberado
+  await assertFails(getDocs(collection(db(BIA), 'sessoes')));
   await assertFails(setDoc(doc(db(ANA), 'sessoes/1234'), { ...s, dono: ANA })); // código vivo
   await assertFails(deleteDoc(doc(db(ANA), 'sessoes/1234')));
   await assertSucceeds(deleteDoc(doc(db(DONO), 'sessoes/1234')));

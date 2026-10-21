@@ -212,11 +212,44 @@ class CloudState extends ChangeNotifier with WidgetsBindingObserver {
     if (!disponivel) return;
     WidgetsBinding.instance.addObserver(this);
     _grupoSalvo = await _lePrefs();
-    _authSub = FirebaseAuth.instance.authStateChanges().listen((u) {
+    _authSub = FirebaseAuth.instance.authStateChanges().listen((u) async {
       user = u;
+      await _conferirLiberacao();
       _ouvirGrupos();
       notifyListeners();
     });
+  }
+
+  // ---------------- liberação ----------------
+  // O login Google é aberto a qualquer conta, mas as regras do Firestore só
+  // deixam usar a nuvem quem está em liberados/{email} (senão qualquer um
+  // gastaria a cota do projeto). Convidar p/ um grupo libera a pessoa.
+
+  /// dono do app: liberado sem precisar de ninguém (igual a admin() nas regras)
+  static const _admins = {'mviniciusdospassos@gmail.com'};
+
+  /// null = ainda conferindo (ou sem internet na primeira vez)
+  bool? liberado;
+
+  Future<void> _conferirLiberacao() async {
+    liberado = null;
+    if (user == null || !disponivel) return;
+    if (_admins.contains(eu)) {
+      liberado = true;
+      return;
+    }
+    try {
+      liberado = (await _db.collection('liberados').doc(eu).get()).exists;
+    } catch (_) {
+      liberado = null;
+    }
+  }
+
+  /// "Já fui liberado": confere de novo sem precisar sair e entrar.
+  Future<void> conferirLiberacao() async {
+    await _conferirLiberacao();
+    _ouvirGrupos();
+    notifyListeners();
   }
 
   Future<File> _prefsFile() async {
@@ -338,7 +371,10 @@ class CloudState extends ChangeNotifier with WidgetsBindingObserver {
               });
             // sem grupo nenhum (confirmado pelo servidor): cria a biblioteca
             // pessoal na nuvem — tudo fica no Firebase sem precisar apertar nada
-            if (grupos.isEmpty && !q.metadata.isFromCache && !_criando) {
+            if (grupos.isEmpty &&
+                !q.metadata.isFromCache &&
+                !_criando &&
+                liberado == true) {
               _criando = true;
               criarGrupo('Biblioteca de $nome', pessoal: true)
                   .whenComplete(() => _criando = false);
@@ -439,6 +475,13 @@ class CloudState extends ChangeNotifier with WidgetsBindingObserver {
     final g = em ?? grupo;
     final e = email.trim().toLowerCase();
     if (g == null || e.isEmpty || g.membros.contains(e)) return;
+    // convidar libera a pessoa p/ usar a nuvem (ver "liberação")
+    await _semEsperar(
+      _db.collection('liberados').doc(e).set({
+        'por': eu,
+        'em': FieldValue.serverTimestamp(),
+      }),
+    );
     await _semEsperar(
       _ref(g).update({
         'membros': FieldValue.arrayUnion([e]),

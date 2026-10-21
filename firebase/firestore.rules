@@ -2,12 +2,14 @@ rules_version = '2';
 
 // MyMusic — biblioteca compartilhada por grupo (banda, coral, ministério...).
 //
-// acervo/{id}                      acervo geral: qualquer pessoa logada vê; dono + editores mudam
+// acervo/{id}                      acervo geral: quem está liberado vê; dono + editores mudam
 // acervo/{id}/versoes/{n}          histórico de cada música do acervo (imutável)
 // acervoSugestoes/{id}             sugestão p/ música do acervo
 // confianca/{dono}                 quem mexe em TODO o acervo de {dono}
 // pessoas/{email}                  nome de cada usuário
 // sessoes/{codigo}                 sessão ao vivo: IPs de quem criou (abre por código)
+// liberados/{email}                quem pode usar a nuvem (login Google é aberto, mas
+//                                  só lê/grava quem foi liberado; convidar p/ um grupo libera)
 // grupos/{g}                       nome, dono (e-mail), membros [e-mails]
 // grupos/{g}/pessoas/{email}       nome de quem é do grupo
 // grupos/{g}/confianca/{dono}      editores [e-mails] que mexem em TODAS as músicas/repertórios de {dono}
@@ -23,6 +25,18 @@ service cloud.firestore {
     function eu() {
       return request.auth != null && request.auth.token.email != null
         ? request.auth.token.email.lower() : '';
+    }
+
+    // quem começa liberado sem precisar de ninguém (o dono do app)
+    function admin() {
+      return eu() in ['mviniciusdospassos@gmail.com'];
+    }
+
+    // login Google é aberto a qualquer conta: sem isso qualquer um gastaria a
+    // cota do projeto. Só usa a nuvem quem um liberado liberou (ao convidar).
+    function liberado() {
+      return eu() != '' && (admin()
+        || exists(/databases/$(database)/documents/liberados/$(eu())));
     }
 
     function grupo(g) {
@@ -58,19 +72,30 @@ service cloud.firestore {
       return request.resource.data.diff(resource.data).affectedKeys().hasOnly(campos);
     }
 
+    // cada um confere se está liberado; quem é liberado libera outros (só
+    // registra quem liberou). Tirar a liberação: só o dono do app.
+    match /liberados/{email} {
+      allow get: if eu() == email || liberado();
+      allow list: if admin();
+      allow create, update: if liberado() && email == email.lower()
+        && request.resource.data.keys().hasOnly(['por', 'em'])
+        && request.resource.data.por == eu();
+      allow delete: if admin();
+    }
+
     match /pessoas/{email} {
-      allow read: if eu() != '';
-      allow write: if eu() == email;
+      allow read: if liberado();
+      allow write: if liberado() && eu() == email;
     }
 
     match /confianca/{dono} {
-      allow read: if eu() != '';
-      allow write: if eu() == dono;
+      allow read: if liberado();
+      allow write: if liberado() && eu() == dono;
     }
 
     match /acervo/{id} {
-      allow read: if eu() != '';
-      allow create: if eu() != '' && request.resource.data.dono == eu()
+      allow read: if liberado();
+      allow create: if liberado() && request.resource.data.dono == eu()
         && request.resource.data.get('editores', []) is list;
       allow update: if podeEditarAcervo(resource.data)
         && request.resource.data.dono == resource.data.dono
@@ -80,18 +105,18 @@ service cloud.firestore {
       allow delete: if false;
 
       match /versoes/{n} {
-        allow read: if eu() != '';
-        allow create: if request.resource.data.por == eu()
+        allow read: if liberado();
+        allow create: if liberado() && request.resource.data.por == eu()
           && podeEditarAcervo(getAfter(/databases/$(database)/documents/acervo/$(id)).data);
         allow update, delete: if false;
       }
     }
 
     match /acervoSugestoes/{id} {
-      allow read: if eu() != '';
-      allow create: if eu() != '' && request.resource.data.por == eu()
+      allow read: if liberado();
+      allow create: if liberado() && request.resource.data.por == eu()
         && request.resource.data.status == 'pendente';
-      allow update: if resource.data.status == 'pendente' && (
+      allow update: if liberado() && resource.data.status == 'pendente' && (
         (request.resource.data.status in ['aceita', 'recusada']
           && request.resource.data.decididoPor == eu()
           && podeEditarAcervo(get(/databases/$(database)/documents/acervo/$(resource.data.songId)).data)
@@ -105,11 +130,11 @@ service cloud.firestore {
     // Só abre por código (sem listar). Código abandonado (>10 min sem sinal)
     // pode ser reaproveitado por outra pessoa.
     match /sessoes/{codigo} {
-      allow get: if eu() != '';
+      allow get: if liberado();
       allow list: if false;
-      allow create: if eu() != '' && codigo.matches('[0-9]{4}')
+      allow create: if liberado() && codigo.matches('[0-9]{4}')
         && request.resource.data.dono == eu();
-      allow update: if eu() != '' && request.resource.data.dono == eu()
+      allow update: if liberado() && request.resource.data.dono == eu()
         && (resource.data.dono == eu()
             || resource.data.vivoEm < request.time - duration.value(10, 'm'));
       allow delete: if eu() == resource.data.dono;
@@ -117,7 +142,7 @@ service cloud.firestore {
 
     match /grupos/{g} {
       allow read: if eu() != '' && (eu() == resource.data.dono || eu() in resource.data.membros);
-      allow create: if eu() != '' && request.resource.data.dono == eu()
+      allow create: if liberado() && request.resource.data.dono == eu()
         && request.resource.data.membros is list;
       // só o dono do grupo convida/remove gente; dono do grupo não muda
       allow update: if eu() == resource.data.dono && request.resource.data.dono == resource.data.dono;

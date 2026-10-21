@@ -37,7 +37,10 @@ class AcervoState extends ChangeNotifier {
   CollectionReference<Map<String, dynamic>> get _col =>
       _db.collection('acervo');
   String get eu => cloud.eu;
-  bool get ligado => cloud.user != null;
+  bool get ligado => cloud.user != null && cloud.liberado == true;
+
+  /// Entrou com o Google mas ainda não foi liberado p/ usar a nuvem.
+  bool get esperandoLiberacao => cloud.user != null && cloud.liberado == false;
 
   String nomeDe(String email) =>
       email == eu ? cloud.nome : (nomes[email] ?? cloud.nomeDe(email));
@@ -46,8 +49,10 @@ class AcervoState extends ChangeNotifier {
 
   void _userMudou() {
     if (cloud.carregou) _publicarSozinho();
-    if (eu == _quem) return;
-    _quem = eu;
+    // só liga p/ quem está liberado (as regras negam o resto)
+    final quem = ligado ? eu : '';
+    if (quem == _quem) return;
+    _quem = quem;
     for (final s in _subs) {
       s.cancel();
     }
@@ -56,28 +61,11 @@ class AcervoState extends ChangeNotifier {
     _ultima.clear();
     sugestoes = [];
     carregou = false;
-    if (eu.isEmpty) {
+    if (quem.isEmpty) {
       notifyListeners();
       return;
     }
-    _subs.add(_col.snapshots().listen((q) {
-      for (final ch in q.docChanges) {
-        final j = ch.doc.data();
-        if (j == null) continue;
-        if (j['apagada'] == true || ch.type == DocumentChangeType.removed) {
-          musicas.remove(ch.doc.id);
-          continue;
-        }
-        final s = Song.fromJson(normFirestore(j));
-        musicas[s.id] = s;
-        if (!ch.doc.metadata.hasPendingWrites) _ultima[s.id] = s.copy();
-      }
-      carregou = true;
-      erro = null;
-      _tentativas = 0;
-      _publicarSozinho();
-      notifyListeners();
-    }, onError: _onErro));
+    _ouvirMusicas(quem);
     _subs.add(_db.collection('confianca').snapshots().listen((q) {
       confianca
         ..clear()
@@ -119,6 +107,58 @@ class AcervoState extends ChangeNotifier {
       'nome': cloud.nome,
       'visto': FieldValue.serverTimestamp(),
     }));
+  }
+
+  /// Lê do cache do aparelho o que já tinha e só pede ao servidor o que mudou
+  /// desde então (antes cada abertura lia o acervo inteiro: com muita gente
+  /// usando, isso gastava a cota diária do Firebase).
+  Future<void> _ouvirMusicas(String quem) async {
+    var desde = '';
+    try {
+      final cache = await _col.get(const GetOptions(source: Source.cache));
+      if (_quem != quem) return;
+      for (final d in cache.docs) {
+        final j = d.data();
+        final u = (j['updatedAt'] ?? '') as String;
+        if (u.compareTo(desde) > 0) desde = u;
+        if (j['apagada'] == true) continue;
+        final s = Song.fromJson(normFirestore(j));
+        musicas[s.id] = s;
+        _ultima[s.id] = s.copy();
+      }
+      if (musicas.isNotEmpty) notifyListeners();
+    } catch (_) {
+      // sem cache (1ª vez, ou cache limpo): lê tudo
+    }
+    // margem de 2 dias: o updatedAt vem do relógio de cada aparelho
+    final corte = DateTime.tryParse(desde)
+        ?.subtract(const Duration(days: 2))
+        .toIso8601String();
+    final Query<Map<String, dynamic>> consulta = corte == null
+        ? _col
+        : _col.where('updatedAt', isGreaterThan: corte);
+    if (_quem != quem) return;
+    _subs.add(consulta.snapshots().listen((q) {
+      for (final ch in q.docChanges) {
+        final j = ch.doc.data();
+        if (j == null) continue;
+        // na consulta "o que mudou", sair do filtro não é apagar
+        if (j['apagada'] == true ||
+            (ch.type == DocumentChangeType.removed && corte == null)) {
+          musicas.remove(ch.doc.id);
+          continue;
+        }
+        if (ch.type == DocumentChangeType.removed) continue;
+        final s = Song.fromJson(normFirestore(j));
+        musicas[s.id] = s;
+        if (!ch.doc.metadata.hasPendingWrites) _ultima[s.id] = s.copy();
+      }
+      carregou = true;
+      erro = null;
+      _tentativas = 0;
+      _publicarSozinho();
+      notifyListeners();
+    }, onError: _onErro));
   }
 
   int _tentativas = 0;
