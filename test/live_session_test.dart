@@ -201,7 +201,7 @@ void main() {
     await sub.cancel();
   });
 
-  test('beacon: só aceita o do MyMusic', () {
+  test('beacon: só aceita o do Arion', () {
     final ok = LiveSession.parseBeacon(
         utf8.encode(jsonEncode({'app': 'arion', 'v': 1, 'name': 'Hub', 'port': 47800, 'peers': 2})),
         '192.168.0.9');

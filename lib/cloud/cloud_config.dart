@@ -5,9 +5,9 @@ import 'package:flutter/foundation.dart';
 import 'firebase_options.dart';
 
 /// Liga o Firebase: o projeto de verdade (firebase_options.dart) ou, nos
-/// testes, o emulador local (`--dart-define=MYMUSIC_EMU=10.0.2.2`).
+/// testes, o emulador local (`--dart-define=ARION_EMU=10.0.2.2`).
 class CloudConfig {
-  static const emuHost = String.fromEnvironment('MYMUSIC_EMU');
+  static const emuHost = String.fromEnvironment('ARION_EMU');
   static bool get emulador => emuHost.isNotEmpty;
 
   /// Client OAuth "Web" do projeto Google — o login do Android pede o

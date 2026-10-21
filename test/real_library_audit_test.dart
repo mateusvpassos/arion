@@ -1,5 +1,5 @@
 // Diagnóstico da biblioteca real do usuário (não versionada): só roda se
-// MYMUSIC_DATA apontar p/ um mymusic_data.json. Não falha — imprime achados.
+// ARION_DATA apontar p/ um arion_data.json. Não falha — imprime achados.
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
@@ -10,7 +10,7 @@ import 'package:arion/models/song.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized(); // fontes do PDF vêm dos assets
-  final path = Platform.environment['MYMUSIC_DATA'];
+  final path = Platform.environment['ARION_DATA'];
   test('auditoria da biblioteca real', () {
     if (path == null) return;
     final j = jsonDecode(File(path).readAsStringSync()) as Map<String, dynamic>;

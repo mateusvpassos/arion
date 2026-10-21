@@ -1,5 +1,5 @@
 // Gera a saída do parser p/ o fixture compartilhado com o editor web
-// (mymusic-web/scripts/parity.ts compara as duas).
+// (arion-web/scripts/parity.ts compara as duas).
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';

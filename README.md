@@ -2,10 +2,11 @@
 
 > Cifras, acordes e letras para tocar ao vivo — pensado para **tablet** (também roda em celular).
 
-App feito em **Flutter** (Android e iOS), focado em ser **bonito, rápido e fácil de usar no palco**: marcar músicas, transpor na hora, montar repertórios e virar páginas com um pedal Bluetooth.
+App feito em **Flutter** (Android, Windows e iOS), focado em ser **bonito, rápido e fácil de usar no palco**: marcar músicas, transpor na hora, montar repertórios e virar páginas com um pedal Bluetooth. Tem também a versão web: [arion-web](https://github.com/mateusvpassos/arion-web) — https://mateusvpassos.github.io/arion-web/.
 
 ![Flutter](https://img.shields.io/badge/Flutter-3.44-02569B?logo=flutter&logoColor=white)
 ![Android](https://img.shields.io/badge/Android-tablet%20%26%20phone-3DDC84?logo=android&logoColor=white)
+![Windows](https://img.shields.io/badge/Windows-PC-0078D4?logo=windows&logoColor=white)
 ![iOS](https://img.shields.io/badge/iOS-iPad%20%26%20iPhone-000000?logo=apple&logoColor=white)
 ![Offline](https://img.shields.io/badge/Offline-first-success)
 ![Licença](https://img.shields.io/badge/uso-pessoal-lightgrey)
@@ -33,26 +34,31 @@ App feito em **Flutter** (Android e iOS), focado em ser **bonito, rápido e fác
 
 ### Organização
 - **Biblioteca** com busca **sem acento** e **por trecho da letra**, **tags/categorias** e filtro
-- **Repertórios** (setlists) reordenáveis, com **tom salvo por música** e **duplicar**
-- Editor **simples**: arraste acordes para a posição certa, ou edite como texto
+- **Repertórios** (setlists) reordenáveis, com **tom salvo por música**, **duplicar** e, ao adicionar músicas, filtro por tag e "tocada há X"
+- Editor **simples**: toque num acorde da paleta e depois na letra (ou arraste p/ cima); a paleta segue o **tom** (campo harmônico primeiro)
+- **Buscar letra** no [LRCLIB](https://lrclib.net) (base aberta): título, artista e letra já em estrofes e refrão
+- **Copiar acordes** de uma estrofe p/ outra com a mesma melodia
 - **Importar cifra** colada no formato "acorde acima da letra" (Cifra Club, inclusive o bug de copiar/colar do site), ChordPro (`{title}`, `{c:}`, `{soc}`) ou com `Tom:`/`Capo` no texto
 - Entende `D7/9`, `Bø`, `B7(4/9)`, marcações `(2x)`, `|`, `N.C.` e seções por extenso (`Refrão:`, `1ª Parte`, `Intro: C G`)
 - **Histórico** de tudo o que mudou (o quê, quando, de qual aparelho)
 - **Desfazer** (undo) na edição
 
-### Backup & sync
-- **Google Drive** (pasta privada `appDataFolder`) com sync automático (baixa, mescla e sobe; mais recente vence; **exclusão se propaga**)
+### Backup & exportar
+- Tudo fica no aparelho (`arion_data.json`) e na nuvem (Firebase) — funciona sem internet e sobe quando voltar
 - **Exportar / importar JSON** (backup completo)
+- Sem a nuvem ligada, ainda dá p/ sincronizar pelo **Google Drive** (pasta privada `appDataFolder`)
 - **PDF** (1 ou 2 colunas, encaixa na página), **Word (.docx)**, **imagem** e **TXT só letras** — da música ou do repertório inteiro no tom do repertório
 
-### Grupo compartilhado (nuvem — Firebase)
-- Um grupo (banda, coral, ministério...) com a mesma biblioteca para todos, sincronizada na hora e offline
+### Grupos e acervo (nuvem — Firebase)
+- **Acervo geral**: as músicas de todo mundo que usa o app (as suas entram sozinhas; continuam suas)
+- **Grupos** (banda, coral, ministério...): lista, criar, renomear, apagar, pessoas e quais músicas estão no grupo; o grupo em uso aparece na tela inicial
+- Login Google aberto, mas a nuvem só funciona p/ quem foi **convidado p/ um grupo** (protege a cota)
 - **Quem cria é o dono**; os outros **sugerem** (o editor vira "Sugerir mudança") e o dono aceita ou recusa vendo a diferença linha a linha
 - **Histórico de versões** de cada música (quem, quando, o que mudou) e **voltar a qualquer versão**
 - Dono **libera** pessoas por música/repertório ou para tudo dele; repertório dos outros fica só leitura
 - Regras de segurança no servidor: [`firebase/firestore.rules`](firebase/firestore.rules) (testes: `cd firebase && npm test`)
-- Configurar: [`docs/FIREBASE.md`](docs/FIREBASE.md). Sem configurar, o app segue só com o Drive
-- Teste local sem tocar no Google: `cd firebase && npm run emu` e `flutter run --dart-define=MYMUSIC_EMU=10.0.2.2`
+- Como está configurado e como mexer: [`docs/FIREBASE.md`](docs/FIREBASE.md)
+- Teste local sem tocar no Google: `cd firebase && npm run emu` e `flutter run --dart-define=ARION_EMU=10.0.2.2`
 
 ### Aparência
 - Tema claro/escuro, **8 cores** à escolha, tamanho de fonte ajustável
@@ -61,7 +67,7 @@ App feito em **Flutter** (Android e iOS), focado em ser **bonito, rápido e fác
 
 ## 🚀 Build & instalação
 
-Pré-requisitos: Flutter (canal stable). Android: JDK 17 e Android SDK. iOS: Mac com Xcode (não compila no Windows).
+Pré-requisitos: Flutter (canal stable). Android: Android Studio (JDK + SDK). Windows: Visual Studio Build Tools e o **Modo de Desenvolvedor** ligado. iOS: Mac com Xcode (não compila no Windows).
 
 ```bash
 flutter pub get
@@ -81,13 +87,18 @@ adb install -r build/app/outputs/flutter-apk/app-release.apk
 ```
 …ou copie o `.apk` para o aparelho e abra (permitir "fontes desconhecidas").
 
+> O APK é assinado com a chave de debug deste PC (`%USERPROFILE%\.android\debug.keystore`, backup em `D:\backup\android\`).
+> Gere sempre com a mesma chave: com outra, o Android não atualiza por cima e o login Google do Android para (o SHA-1 está cadastrado no Firebase).
+
+PC: o build sai em `build\windows\x64\runner\Release\` (`arion.exe` + DLLs); a instalação atual copia essa pasta p/ `%LOCALAPPDATA%\Programs\Arion` e cria o atalho.
+
 Rodar em modo dev (hot reload):
 ```bash
 flutter run                 # Android
 flutter run -d ios          # iPhone/iPad, no Mac
 ```
 
-O alvo iOS usa o mesmo código do Android (`lib/`). Bundle: `com.mvini.arion`. No Mac, abra `ios/Runner.xcworkspace` no Xcode. A sessão ao vivo na rede local já está liberada no `Info.plist`. Login Google e o grupo Firebase no iOS ficam desligados até registrar o app iOS no Firebase e criar um OAuth Client tipo iOS — sem isso o app abre e funciona offline.
+O alvo iOS usa o mesmo código do Android (`lib/`). Bundle: `com.mvini.arion`. No Mac, abra `ios/Runner.xcworkspace` no Xcode. A sessão ao vivo na rede local já está liberada no `Info.plist`. Login Google e a nuvem no iOS ficam desligados até registrar o app iOS no Firebase (`firebaseIos` em `lib/cloud/firebase_options.dart`) — sem isso o app abre e funciona offline.
 
 Testes do motor de cifras:
 ```bash
@@ -96,15 +107,9 @@ flutter test
 
 ---
 
-## ☁️ Configurar o sync com Google Drive (opcional)
+## ☁️ Nuvem
 
-1. No [Google Cloud Console](https://console.cloud.google.com): crie um **OAuth Client tipo Android**
-   - Pacote: `com.mvini.arion`
-   - SHA-1 da sua keystore (`keytool -list -v -keystore <keystore>`)
-2. Ative a **Google Drive API**
-3. Na **tela de consentimento OAuth**: adicione o escopo `.../auth/drive.appdata` e seu e-mail como **usuário de teste**
-
-> O client id **não** vai no código — o Google associa o app por pacote + SHA-1.
+Firebase, login Google, clients OAuth e regras: [`docs/FIREBASE.md`](docs/FIREBASE.md).
 
 ---
 
@@ -119,11 +124,14 @@ lib/
 │   ├── chart_layout.dart   # encaixe em colunas/fonte (compartilhado PDF e DOCX)
 │   ├── pdf_export.dart     # PDF / impressão
 │   ├── docx_export.dart    # Word
-│   └── search.dart         # busca sem acento + trecho da letra
+│   ├── search.dart         # busca sem acento + trecho da letra
+│   ├── letras.dart         # busca de letra no LRCLIB
+│   └── liturgia.dart       # "tocada há X" (uso das músicas nos repertórios)
+├── cloud/                  # Firebase: login, grupos, acervo, sugestões, versões, permissões
 ├── live/                   # sessão ao vivo: hub WebSocket + descoberta UDP + tela
 ├── data/store.dart         # estado global (ChangeNotifier) + persistência JSON
 ├── models/song.dart        # Song · Section · Line · Chord · Setlist · Settings
-├── sync/drive_sync.dart    # login Google + sync Drive (appDataFolder)
+├── sync/                   # login Google no PC (desktop_auth) + sync Drive (opcional)
 └── ui/                     # biblioteca, apresentação, editor, repertórios, configurações
 ```
 
@@ -133,9 +141,10 @@ O **núcleo de cifras** (`core/`) é Dart puro, sem dependência de UI — fáci
 
 ## 🗺️ Roadmap
 
-- [ ] Velocidade de auto-scroll salva por música
+- [ ] Chave própria de assinatura do Android (hoje é a de debug)
+- [ ] Instalador do PC com atualização automática
 - [ ] Opção de seguir sem pegar o tom de quem conduz (ex.: teclado sem capo)
 
 ---
 
-<p align="center"><i>Feito com 🎶 para servir.</i></p>
+<p align="center"><i>Feito com 🎶.</i></p>

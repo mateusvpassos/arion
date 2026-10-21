@@ -1,61 +1,65 @@
-# Ligar a nuvem (Firebase) — passo a passo
+# Nuvem (Firebase) — como está configurado
 
-Uns 10 minutos, tudo no navegador. No fim você me manda dois blocos de
-configuração (Android e Web) e eu coloco no app e no editor web.
+Tudo do Arion fica num projeto só: **Arion** (`arion-cifras`, nº 911820467893),
+plano gratuito **Spark** (sem cartão: se a cota do dia acabar, para até o dia seguinte; nunca cobra).
 
-## 1. Criar o projeto em cima do projeto Google que já existe
+Consoles:
+- Firebase: https://console.firebase.google.com/project/arion-cifras
+- Login Google (clients e tela de consentimento): https://console.cloud.google.com/auth/overview?project=arion-cifras
 
-1. Abra https://console.firebase.google.com e clique em **Criar um projeto**
-   (ou "Adicionar projeto").
-2. Na tela do nome, clique em **"Adicionar o Firebase a um projeto do Google Cloud"**
-   e escolha o projeto que o app já usa para o Drive (nº **333951307134**).
-   Assim o login do Google que já funciona no tablet e no web continua valendo.
-3. Google Analytics: **desligado** (não precisa). Concluir.
+## O que tem lá
 
-## 2. Login com Google
+| Peça | Onde | Observação |
+|---|---|---|
+| **Firestore** | `southamerica-east1` (São Paulo), modo produção | Regras: [`firebase/firestore.rules`](../firebase/firestore.rules) |
+| **Authentication** | provedor **Google** ativado | Domínios autorizados: `localhost`, `arion-cifras.firebaseapp.com`, `arion-cifras.web.app`, `mateusvpassos.github.io` |
+| App **Android** | `com.mvini.arion` | SHA-1 do `debug.keystore` cadastrado (o APK é assinado com ele) |
+| App **Web** | Arion Web | config em `arion-web/src/firebase.ts` |
+| Client OAuth **Web** | criado pelo Firebase | usado como `serverClientId` no Android (`lib/cloud/cloud_config.dart`) |
+| Client OAuth **Android** | criado pelo Firebase (pacote + SHA-1) | |
+| Client OAuth **Arion PC** | tipo "App para computador" | id/secret em `desktop_oauth.json` (fora do git; backup em `D:\backup\`) |
+| Tela de consentimento | **Em produção**, tipo Externo | Página inicial e política de privacidade no GitHub Pages (`arion-web/`) |
 
-1. Menu da esquerda → **Criação** (Build) → **Authentication** → **Vamos começar**.
-2. Aba **Método de login** → **Google** → **Ativar** → escolha seu e-mail de suporte → **Salvar**.
-3. Ainda em Authentication → **Configurações** → **Domínios autorizados**:
-   confira se `localhost` está na lista (o editor web roda nele).
+A config do Firebase (apiKey, appId...) **não é segredo**: o acesso é controlado pelas regras.
+Só o `desktop_oauth.json` fica fora do git (o build do PC lê com
+`--dart-define-from-file=desktop_oauth.json`).
 
-## 3. Banco de dados
+## Quem pode usar (liberação)
 
-1. **Criação** → **Firestore Database** → **Criar banco de dados**.
-2. Local: **southamerica-east1 (São Paulo)**. Modo: **produção**. Criar.
-3. Aba **Regras**: apague o que estiver lá, cole o conteúdo de
-   [`firebase/firestore.rules`](../firebase/firestore.rules) e clique em **Publicar**.
-   (São elas que garantem dono, permissão e sugestão no servidor.)
+O login Google é aberto a qualquer conta, mas **só lê e grava na nuvem quem está liberado**
+(`liberados/{email}`), senão qualquer um gastaria a cota do projeto:
 
-## 4. Registrar o app Android
+- O dono do app (`mviniciusdospassos@gmail.com`) já começa liberado (`admin()` nas regras).
+- **Convidar alguém para um grupo libera a pessoa** na hora — não precisa mexer em console nenhum.
+- Quem entra sem ter sido convidado vê "Acesso ainda não liberado" e um botão "Já me adicionaram".
+- Tirar a liberação: só o dono do app, apagando o documento em `liberados/` no console do Firestore.
 
-1. Engrenagem ⚙ → **Configurações do projeto** → em "Seus apps", ícone do **Android**.
-2. Nome do pacote: `com.mvini.arion`. Apelido: Arion Android. (SHA-1 não precisa
-   agora.) **Registrar app**.
-3. Baixe o **google-services.json** e me mande (ou copie os valores
-   `mobilesdk_app_id`, `current_key` e `project_id`). Pode pular os outros passos do assistente.
+## Mudar as regras
 
-## 5. Registrar o editor web
+1. Edite [`firebase/firestore.rules`](../firebase/firestore.rules) e rode os testes:
+   ```bash
+   cd firebase && npm test
+   ```
+   (precisa de Java; o do Android Studio serve: `JAVA_HOME="C:/Program Files/Android/Android Studio/jbr"`)
+2. Firestore → aba **Regras** → cole o arquivo → **Publicar**
+   (ou `npx firebase deploy --only firestore:rules --project arion-cifras` depois de `firebase login`).
 
-1. Mesma tela → **Adicionar app** → ícone **Web** (`</>`). Apelido: Arion Web.
-   **Não** marque Firebase Hosting. Registrar.
-2. Copie o bloco `const firebaseConfig = { ... }` que aparece e me mande.
+## Testar sem tocar no projeto de verdade
 
-## 6. Quem vai usar
+Emulador local do Firebase (projeto `demo-arion`):
+```bash
+cd firebase && npm run emu
+flutter run --dart-define=ARION_EMU=10.0.2.2   # app no emulador Android
+cd ../../arion-web && npm run dev:emu          # web na porta 4174
+```
 
-O app está em "modo de teste" no Google: cada pessoa precisa estar na lista de
-usuários de teste (até 100).
+## Se precisar refazer do zero
 
-- https://console.cloud.google.com → projeto 333951307134 → **APIs e serviços** →
-  **Tela de consentimento OAuth** (ou "Público") → **Usuários de teste** → adicionar o
-  e-mail Google de cada pessoa do grupo.
-
-## Depois (eu faço com você)
-
-1. Coloco as configurações, gero o app e instalo no tablet.
-2. No tablet: ☁ (barra de cima) → **Entrar com Google** → **Criar grupo** (dê o nome
-   que quiser) → **Enviar para o grupo**: suas músicas e repertórios vão para a nuvem
-   com você como dono. O Drive continua como backup.
-3. Convide as pessoas pelo e-mail na mesma tela.
-
-Custo: plano gratuito (Spark), sem cartão. O uso de vocês fica muito abaixo do limite.
+1. Criar projeto no Firebase (Analytics desligado), Firestore em São Paulo modo produção, Authentication → Google.
+2. Registrar Android (`com.mvini.arion` + SHA-1: `keytool -J-Duser.language=en -list -v -keystore %USERPROFILE%\.android\debug.keystore -storepass android`) e Web.
+3. Google Cloud → Google Auth Platform: criar client **App para computador**; branding com página inicial e
+   política de privacidade; **Publicar app**.
+4. Trocar as configs em `lib/cloud/firebase_options.dart`, `lib/cloud/cloud_config.dart` (webClientId),
+   `arion-web/src/firebase.ts` e `desktop_oauth.json`; publicar as regras.
+5. Dados: a migração de 21/10/2026 copiou tudo do projeto antigo com um script que lê com o login do dono e
+   grava com os mesmos IDs, conferindo documento a documento. Backup daquela cópia: `D:\backup\arion-migracao\`.

@@ -1,7 +1,7 @@
 // letras.dart — busca de letra no LRCLIB (lrclib.net): base aberta, sem
 // chave. Só a letra; os acordes a pessoa põe no editor.
 //
-// Espelhado em mymusic-web/src/letras.ts.
+// Espelhado em arion-web/src/letras.ts.
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/song.dart';

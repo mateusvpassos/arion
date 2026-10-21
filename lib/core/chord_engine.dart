@@ -1,6 +1,6 @@
 // chord_engine.dart — núcleo portável (sem widgets). Parser ChordPro, transpose.
 //
-// Espelhado em mymusic-web/src/chordEngine.ts: mudança aqui vai lá também.
+// Espelhado em arion-web/src/chordEngine.ts: mudança aqui vai lá também.
 import 'dart:math';
 import '../models/song.dart';
 
