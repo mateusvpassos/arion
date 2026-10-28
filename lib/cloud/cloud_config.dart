@@ -15,6 +15,11 @@ class CloudConfig {
   static const webClientId =
       '911820467893-lbvoe3a9eqljcn9ip19rlm4r8hnn30rf.apps.googleusercontent.com';
 
+  /// Páginas publicadas junto com a versão web (GitHub Pages).
+  static const urlPrivacidade =
+      'https://mateusvpassos.github.io/arion-web/privacidade.html';
+  static const urlTermos = 'https://mateusvpassos.github.io/arion-web/termos.html';
+
   static FirebaseOptions? get options {
     if (emulador) {
       return const FirebaseOptions(

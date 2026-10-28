@@ -4,6 +4,7 @@ import '../cloud/cloud_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'tema.dart';
 import '../core/pedal.dart';
 import '../data/store.dart';
@@ -157,6 +158,33 @@ class SettingsPage extends StatelessWidget {
           ]),
           // só Firebase: Drive aparece só se a nuvem não estiver configurada
           if (!CloudConfig.ligado) _card('Google Drive', [_drive(context, st)]),
+          _card('Privacidade', [
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.privacy_tip_outlined),
+              title: const Text('Política de privacidade'),
+              trailing: const Icon(Icons.open_in_new),
+              onTap: () => _abrirUrl(CloudConfig.urlPrivacidade),
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.description_outlined),
+              title: const Text('Termos de uso'),
+              trailing: const Icon(Icons.open_in_new),
+              onTap: () => _abrirUrl(CloudConfig.urlTermos),
+            ),
+            Builder(builder: (context) {
+              final c = context.watch<CloudState>();
+              if (c.user == null) return const SizedBox.shrink();
+              return ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(Icons.person_remove_outlined, color: scheme.error),
+                title: Text('Excluir minha conta', style: TextStyle(color: scheme.error)),
+                subtitle: Text(c.eu),
+                onTap: () => _excluirConta(context, c),
+              );
+            }),
+          ]),
           const SizedBox(height: 16),
           Center(
             child: Text('Arion', style: TextStyle(color: Theme.of(context).hintColor)),
@@ -307,6 +335,41 @@ class SettingsPage extends StatelessWidget {
             child: LinearProgressIndicator(),
           ),
       ],
+    );
+  }
+
+  void _abrirUrl(String url) =>
+      launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+
+  void _excluirConta(BuildContext context, CloudState c) async {
+    final scheme = Theme.of(context).colorScheme;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Excluir minha conta?'),
+        content: const Text(
+          'Apaga da nuvem a sua conta, as músicas e repertórios que são seus '
+          '(inclusive nos grupos e no acervo geral), as suas sugestões e o seu '
+          'nome. Os grupos que são seus passam para outra pessoa do grupo. '
+          'A exclusão é feita em até 30 dias e não dá para desfazer.\n\n'
+          'O que está neste aparelho continua aqui; para apagar, desinstale o app.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: scheme.error,
+              foregroundColor: scheme.onError,
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Excluir'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !await c.pedirExclusao() || !context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Pedido de exclusão enviado. Você saiu da conta.')),
     );
   }
 
