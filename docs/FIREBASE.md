@@ -36,7 +36,7 @@ O login Google é aberto a qualquer conta, mas **só lê e grava na nuvem quem e
 
 ## Pedidos de exclusão de conta (LGPD)
 
-"Excluir minha conta" (app: menu ⋮ ao lado de Sair; web: Grupos) grava `exclusoes/{email}` e sai
+"Excluir minha conta" (Configurações › Privacidade, no app e na web) grava `exclusoes/{email}` e sai
 da conta. O plano Spark não tem Cloud Functions, então quem apaga é o dono do app, **em até 30 dias**
 (prazo da [política](https://mateusvpassos.github.io/arion-web/privacidade.html)):
 
