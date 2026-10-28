@@ -507,9 +507,10 @@ class _SongEditPageState extends State<SongEditPage> {
         children: [
           TextField(
             controller: _title,
+            autofocus: widget.novo != null,
             style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
             decoration: const InputDecoration(
-              hintText: 'Título',
+              hintText: 'Título da música',
               isDense: true,
             ),
           ),

@@ -77,7 +77,7 @@ class _MinhasMusicasPageState extends State<MinhasMusicasPage> {
         icon: const Icon(Icons.add),
         label: const Text('Música'),
         onPressed: () {
-          final s = Song(id: ChordEngine.uid(), title: 'Nova música');
+          final s = Song(id: ChordEngine.uid(), title: '');
           Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => SongEditPage(songId: s.id, novo: s)),

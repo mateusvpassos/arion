@@ -638,11 +638,6 @@ class _SongViewPageState extends State<SongViewPage>
                       PopupMenuItem(value: 'img', child: Text('Imagem (PNG)')),
                     ],
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.fullscreen),
-                    tooltip: 'Tela cheia',
-                    onPressed: _toggleFull,
-                  ),
                   if (doAcervo) ...[
                     IconButton(
                       icon: const Icon(Icons.library_add_outlined),
@@ -851,7 +846,7 @@ class _SongViewPageState extends State<SongViewPage>
             ),
           ],
         ),
-        bottomNavigationBar: _full ? null : _toolbar(st, base, scheme),
+        bottomNavigationBar: _full ? null : _toolbar(st, base, shown.key, scheme),
       ),
     );
   }
@@ -1028,7 +1023,7 @@ class _SongViewPageState extends State<SongViewPage>
     );
   }
 
-  Widget _toolbar(AppState st, Song base, ColorScheme scheme) {
+  Widget _toolbar(AppState st, Song base, String tomMostrado, ColorScheme scheme) {
     final doAcervo = st.songById(base.id) == null;
     return SafeArea(
       child: Container(
@@ -1054,19 +1049,19 @@ class _SongViewPageState extends State<SongViewPage>
                   _idx > 0 ? () => _gotoSong(_idx - 1) : null,
                 ),
               _tb(Icons.remove, 'Tom -', () => _setTranspose(_transpose - 1)),
-              _label('Tom'),
+              _label('Tom $tomMostrado'),
               _tb(Icons.add, 'Tom +', () => _setTranspose(_transpose + 1)),
               _tb(Icons.text_decrease, 'Fonte -', () => _setFont(-0.1)),
               _tb(Icons.text_increase, 'Fonte +', () => _setFont(0.1)),
               if (!doAcervo) ...[
-                _tb(Icons.south, 'Capo -', () {
+                _tb(Icons.remove, 'Capo -', () {
                   if (base.capo > 0) {
                     base.capo--;
                     st.upsertSong(base);
                   }
                 }),
                 _label('Capo ${base.capo}'),
-                _tb(Icons.north, 'Capo +', () {
+                _tb(Icons.add, 'Capo +', () {
                   base.capo++;
                   st.upsertSong(base);
                 }),

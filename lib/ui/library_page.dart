@@ -131,6 +131,8 @@ class _TituloComGrupo extends StatelessWidget {
           const Text('Arion'),
           Text(
             g.pessoal && g.dono == c.eu ? 'Minha biblioteca ▾' : '${g.nome} ▾',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontSize: 12,
               color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -184,7 +186,7 @@ class _LibraryPageState extends State<LibraryPage>
               child: Image.asset('assets/icon/icon.png', width: 32, height: 32),
             ),
             const SizedBox(width: 10),
-            const _TituloComGrupo(),
+            const Flexible(child: _TituloComGrupo()),
           ],
         ),
         // abas numa cápsula com borda (como no web e no Kino)
@@ -202,24 +204,48 @@ class _LibraryPageState extends State<LibraryPage>
             child: TabBar(
               controller: _tab,
               tabs: const [
-                Tab(height: 34, text: 'Músicas'),
+                Tab(height: 34, text: 'Acervo'),
                 Tab(height: 34, text: 'Repertórios'),
               ],
             ),
           ),
         ),
-        actions: [
-          const _CloudButtons(),
-          _LiveButton(),
-          IconButton(
-            icon: const Icon(Icons.tune),
-            tooltip: 'Configurações',
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const SettingsPage()),
-            ),
-          ),
-        ],
+        // celular: Grupos e Configurações vão p/ o menu (senão some o nome do grupo)
+        actions: MediaQuery.sizeOf(context).width < 480
+            ? [
+                const _CloudButtons(comGrupos: false),
+                _LiveButton(),
+                PopupMenuButton<Widget>(
+                  tooltip: 'Mais',
+                  onSelected: (p) => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => p),
+                  ),
+                  itemBuilder: (_) => [
+                    if (context.read<CloudState>().disponivel)
+                      const PopupMenuItem(
+                        value: CloudPage(),
+                        child: ListTile(leading: Icon(Icons.group_outlined), title: Text('Grupos')),
+                      ),
+                    const PopupMenuItem(
+                      value: SettingsPage(),
+                      child: ListTile(leading: Icon(Icons.tune), title: Text('Configurações')),
+                    ),
+                  ],
+                ),
+              ]
+            : [
+                const _CloudButtons(),
+                _LiveButton(),
+                IconButton(
+                  icon: const Icon(Icons.tune),
+                  tooltip: 'Configurações',
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const SettingsPage()),
+                  ),
+                ),
+              ],
       ),
       body: Column(
         children: [
@@ -295,8 +321,16 @@ class _LibraryPageState extends State<LibraryPage>
           ),
         Expanded(
           child: hits.isEmpty
-              ? _empty(a.carregou ? (_query.isEmpty ? 'Nenhuma música no acervo' : 'Nada encontrado') : 'Carregando...',
-                  Icons.library_music)
+              ? (a.carregou && _query.isEmpty
+                  ? _empty(
+                      'O acervo ainda está vazio',
+                      Icons.library_music,
+                      dica: 'Cole uma cifra (do Cifra Club, por exemplo) ou digite a sua. '
+                          'Ela fica nas suas músicas e no acervo, para o seu grupo tocar junto.',
+                      acao: 'Criar a primeira música',
+                      onAcao: () => _newSong(st),
+                    )
+                  : _empty(a.carregou ? 'Nada encontrado' : 'Carregando...', Icons.library_music))
               : ListView.separated(
                   padding: const EdgeInsets.fromLTRB(12, 4, 12, 96),
                   itemCount: hits.length,
@@ -381,7 +415,13 @@ class _LibraryPageState extends State<LibraryPage>
 
   Widget _setlistsTab(AppState st) {
     if (st.setlists.isEmpty) {
-      return _empty('Nenhum repertório', Icons.queue_music);
+      return _empty(
+        'Nenhum repertório ainda',
+        Icons.queue_music,
+        dica: 'Monte a lista de um culto, show ou ensaio: as músicas na ordem, cada uma no tom do dia.',
+        acao: 'Criar repertório',
+        onAcao: () => _newSetlist(st),
+      );
     }
     final q = SongSearch.fold(_query.trim());
     // com data primeiro (mais recente no topo), depois sem data
@@ -452,19 +492,43 @@ class _LibraryPageState extends State<LibraryPage>
     );
   }
 
-  Widget _empty(String msg, IconData icon) => Center(
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 64, color: Theme.of(context).disabledColor),
-        const SizedBox(height: 12),
-        Text(msg, style: TextStyle(color: Theme.of(context).disabledColor)),
-      ],
-    ),
-  );
+  /// Lista vazia; com [acao], explica o que fazer e já oferece o botão.
+  Widget _empty(String msg, IconData icon, {String? dica, String? acao, VoidCallback? onAcao}) {
+    final scheme = Theme.of(context).colorScheme;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 64, color: acao == null ? Theme.of(context).disabledColor : scheme.primary),
+            const SizedBox(height: 12),
+            Text(
+              msg,
+              style: acao == null
+                  ? TextStyle(color: Theme.of(context).disabledColor)
+                  : const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+            ),
+            if (dica != null) ...[
+              const SizedBox(height: 6),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 420),
+                child: Text(dica, textAlign: TextAlign.center,
+                    style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 14)),
+              ),
+            ],
+            if (acao != null) ...[
+              const SizedBox(height: 16),
+              FilledButton.icon(onPressed: onAcao, icon: const Icon(Icons.add), label: Text(acao)),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
 
   void _newSong(AppState st) {
-    final s = Song(id: ChordEngine.uid(), title: 'Nova música');
+    final s = Song(id: ChordEngine.uid(), title: '');
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -558,7 +622,8 @@ class _LibraryPageState extends State<LibraryPage>
 
 /// Nuvem: sugestões esperando (com contador) e o grupo.
 class _CloudButtons extends StatelessWidget {
-  const _CloudButtons();
+  const _CloudButtons({this.comGrupos = true});
+  final bool comGrupos;
 
   @override
   Widget build(BuildContext context) {
@@ -591,7 +656,7 @@ class _CloudButtons extends StatelessWidget {
               MaterialPageRoute(builder: (_) => const SuggestionsPage()),
             ),
           ),
-        IconButton(
+        if (comGrupos) IconButton(
           tooltip: 'Grupos',
           icon: Icon(c.ativa ? Icons.group_outlined : Icons.cloud_off_outlined),
           onPressed: () => Navigator.push(
