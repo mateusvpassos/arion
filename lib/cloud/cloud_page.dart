@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'cloud_config.dart';
 import 'cloud_state.dart';
 import 'grupo_page.dart';
+
+const urlPrivacidade = 'https://mateusvpassos.github.io/arion-web/privacidade.html';
+const urlTermos = 'https://mateusvpassos.github.io/arion-web/termos.html';
 
 /// Grupos: quem você é e a lista dos seus grupos (tocar abre o grupo).
 class CloudPage extends StatefulWidget {
@@ -151,6 +155,22 @@ class _CloudPageState extends State<CloudPage> {
             icon: const Icon(Icons.account_circle),
             label: const Text('Entrar com Google'),
           ),
+        const SizedBox(height: 8),
+        Wrap(
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            Text('Ao entrar você aceita os',
+                style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+            TextButton(
+              onPressed: () => launchUrl(Uri.parse(urlTermos), mode: LaunchMode.externalApplication),
+              child: const Text('termos de uso', style: TextStyle(fontSize: 12)),
+            ),
+            TextButton(
+              onPressed: () => launchUrl(Uri.parse(urlPrivacidade), mode: LaunchMode.externalApplication),
+              child: const Text('política de privacidade', style: TextStyle(fontSize: 12)),
+            ),
+          ],
+        ),
       ],
     );
   }
@@ -167,8 +187,57 @@ class _CloudPageState extends State<CloudPage> {
         ),
         title: Text(c.nome, style: const TextStyle(fontWeight: FontWeight.w700)),
         subtitle: Text(c.eu),
-        trailing: TextButton(onPressed: c.sair, child: const Text('Sair')),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextButton(onPressed: c.sair, child: const Text('Sair')),
+            PopupMenuButton<String>(
+              onSelected: (v) => v == 'excluir'
+                  ? _excluirConta(context, c)
+                  : launchUrl(Uri.parse(v), mode: LaunchMode.externalApplication),
+              itemBuilder: (_) => const [
+                PopupMenuItem(value: urlPrivacidade, child: Text('Política de privacidade')),
+                PopupMenuItem(value: urlTermos, child: Text('Termos de uso')),
+                PopupMenuItem(value: 'excluir', child: Text('Excluir minha conta')),
+              ],
+            ),
+          ],
+        ),
       ),
+    );
+  }
+
+  Future<void> _excluirConta(BuildContext context, CloudState c) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Excluir minha conta?'),
+        content: const Text(
+          'Apaga da nuvem a sua conta, as músicas e repertórios que são seus '
+          '(inclusive nos grupos e no acervo geral), as suas sugestões e o seu '
+          'nome. Os grupos que são seus passam para outra pessoa do grupo. '
+          'A exclusão é feita em até 30 dias e não dá para desfazer.\n\n'
+          'O que está neste aparelho continua aqui; para apagar, desinstale o app.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Excluir'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !await c.pedirExclusao() || !context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Pedido de exclusão enviado. Você saiu da conta.')),
     );
   }
 

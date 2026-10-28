@@ -34,6 +34,23 @@ O login Google é aberto a qualquer conta, mas **só lê e grava na nuvem quem e
 - Quem entra sem ter sido convidado vê "Acesso ainda não liberado" e um botão "Já me adicionaram".
 - Tirar a liberação: só o dono do app, apagando o documento em `liberados/` no console do Firestore.
 
+## Pedidos de exclusão de conta (LGPD)
+
+"Excluir minha conta" (app: menu ⋮ ao lado de Sair; web: Grupos) grava `exclusoes/{email}` e sai
+da conta. O plano Spark não tem Cloud Functions, então quem apaga é o dono do app, **em até 30 dias**
+(prazo da [política](https://mateusvpassos.github.io/arion-web/privacidade.html)):
+
+```bash
+gcloud auth application-default login    # uma vez (ou GOOGLE_APPLICATION_CREDENTIALS)
+cd firebase
+node excluir-contas.mjs                  # lista os pedidos e o que vai mudar
+node excluir-contas.mjs --aplicar        # apaga
+node excluir-contas.mjs fulano@x.com     # pedido feito por e-mail (sem documento)
+```
+
+O que o script faz está no topo de [`firebase/excluir-contas.mjs`](../firebase/excluir-contas.mjs);
+o teste no emulador é `excluir-contas.test.mjs` (roda junto no `npm test`).
+
 ## Mudar as regras
 
 1. Edite [`firebase/firestore.rules`](../firebase/firestore.rules) e rode os testes:

@@ -346,6 +346,24 @@ class CloudState extends ChangeNotifier with WidgetsBindingObserver {
     notifyListeners();
   }
 
+  /// Pede a exclusão da conta e de tudo dela na nuvem: o dono do app roda
+  /// firebase/excluir-contas.mjs. Sai da conta neste aparelho.
+  Future<bool> pedirExclusao() async {
+    erro = null;
+    try {
+      await _db.collection('exclusoes').doc(eu).set({
+        'em': FieldValue.serverTimestamp(),
+        'nome': nome,
+      }).timeout(const Duration(seconds: 10));
+    } catch (e) {
+      erro = 'Não deu para pedir a exclusão (precisa de internet): $e';
+      notifyListeners();
+      return false;
+    }
+    await sair();
+    return true;
+  }
+
   // ---------------- grupos ----------------
 
   void _ouvirGrupos() {

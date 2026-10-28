@@ -83,6 +83,16 @@ service cloud.firestore {
       allow delete: if admin();
     }
 
+    // pedido de exclusão da conta (LGPD art. 18). Qualquer conta logada pede a
+    // própria; o dono do app roda firebase/excluir-contas.mjs, que apaga tudo.
+    match /exclusoes/{email} {
+      allow get: if eu() == email || admin();
+      allow list, delete: if admin();
+      allow create, update: if eu() != '' && eu() == email
+        && request.resource.data.keys().hasOnly(['em', 'nome'])
+        && request.resource.data.em == request.time;
+    }
+
     match /pessoas/{email} {
       allow read: if liberado();
       allow write: if liberado() && eu() == email;

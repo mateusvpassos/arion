@@ -212,3 +212,19 @@ test('sessão ao vivo: abre por código, não lista, só o dono mexe', async () 
     { ...s, vivoEm: Timestamp.fromMillis(Date.now() - 11 * 60000) }));
   await assertSucceeds(setDoc(doc(db(ANA), 'sessoes/4321'), { ...s, dono: ANA }));
 });
+
+test('pedido de exclusão: cada um pede a própria, só o admin lista e apaga', async () => {
+  const { serverTimestamp } = await import('firebase/firestore');
+  const p = { em: serverTimestamp(), nome: 'Intruso' };
+  // basta ter login, mesmo sem ser liberado
+  await assertSucceeds(setDoc(doc(db(FORA), `exclusoes/${FORA}`), p));
+  await assertSucceeds(getDoc(doc(db(FORA), `exclusoes/${FORA}`)));
+  await assertFails(setDoc(doc(db(ANA), `exclusoes/${BIA}`), p)); // em nome de outro
+  await assertFails(setDoc(doc(db(ANA), `exclusoes/${ANA}`), { ...p, extra: 1 }));
+  await assertFails(setDoc(doc(db(ANA), `exclusoes/${ANA}`), { ...p, em: new Date(0) }));
+  await assertFails(getDoc(doc(db(ANA), `exclusoes/${FORA}`)));
+  await assertFails(getDocs(collection(db(DONO), 'exclusoes')));
+  await assertFails(deleteDoc(doc(db(FORA), `exclusoes/${FORA}`)));
+  await assertSucceeds(getDocs(collection(db(ADMIN), 'exclusoes')));
+  await assertSucceeds(deleteDoc(doc(db(ADMIN), `exclusoes/${FORA}`)));
+});
