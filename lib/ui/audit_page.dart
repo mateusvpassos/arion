@@ -209,8 +209,8 @@ class _AuditPageState extends State<AuditPage> {
                                           CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          // backup/sync: o título já é a frase
-                                          // ("Sync com o Drive")
+                                          // backup: o título já é a frase
+                                          // ("Importou backup (mesclou)")
                                           e.entity == 'backup'
                                               ? e.title
                                               : '${e.action[0].toUpperCase()}${e.action.substring(1)} ${_rotulo(e.entity)} "${e.title}"',

@@ -1,15 +1,14 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
-import 'package:googleapis/drive/v3.dart' as drive;
 import 'package:googleapis_auth/auth_io.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 
 /// Login Google no PC (Windows): o google_sign_in não tem implementação
 /// desktop, então abre o navegador e recebe o código num servidor local
-/// (OAuth "loopback"). Um login só serve p/ Drive e Firebase; o refresh
-/// token fica salvo p/ entrar sozinho na próxima vez.
+/// (OAuth "loopback") e entra no Firebase com ele; o refresh token fica
+/// salvo p/ entrar sozinho na próxima vez.
 class DesktopAuth {
   DesktopAuth._();
   static final instance = DesktopAuth._();
@@ -28,11 +27,8 @@ class DesktopAuth {
   );
   static bool get configurado => _id.isNotEmpty;
 
-  static const _scopes = [
-    'openid',
-    'email',
-    drive.DriveApi.driveAppdataScope,
-  ];
+  // só o necessário p/ o Firebase saber quem é
+  static const _scopes = ['openid', 'email'];
 
   final _clientId = ClientId(_id, _secret.isEmpty ? null : _secret);
   AccessCredentials? _cred;
@@ -64,6 +60,11 @@ class DesktopAuth {
       final salvo = AccessCredentials.fromJson(
         (m['cred'] as Map).cast<String, dynamic>(),
       );
+      // login antigo, que ainda pedia o Drive: entra de novo só com e-mail
+      if (salvo.scopes.any((x) => x.contains('/auth/drive'))) {
+        await f.delete();
+        return false;
+      }
       final base = http.Client();
       try {
         _cred = await refreshCredentials(_clientId, salvo, base);
@@ -125,18 +126,6 @@ class DesktopAuth {
       await _salva();
     }
     return _cred!.accessToken.data;
-  }
-
-  /// Cliente HTTP autenticado p/ o Drive (renova o token sozinho).
-  http.Client? client() {
-    final c = _cred;
-    if (c == null) return null;
-    final auto = autoRefreshingClient(_clientId, c, http.Client());
-    auto.credentialUpdates.listen((n) {
-      _cred = n;
-      _salva();
-    });
-    return auto;
   }
 
   static void _abreNavegador(String url) {

@@ -4,7 +4,7 @@ import 'package:firebase_core/firebase_core.dart';
 /// Configurações do projeto → Seus apps → Android). Não é segredo: o acesso
 /// é controlado pelas regras em firebase/firestore.rules.
 ///
-/// null = nuvem ainda não configurada (o app funciona só com o Drive).
+/// null = nuvem não configurada (o app funciona só local).
 // ignore: unnecessary_nullable_for_final_variable_declarations
 const FirebaseOptions? firebaseAndroid = FirebaseOptions(
   apiKey: 'AIzaSyC--2c2wMRa4pNx9LWBc1UR1dUJtKnNZT0',

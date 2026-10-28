@@ -13,7 +13,7 @@ void main() {
     final tablet = AppState()..songs.addAll([s('a', ontem), s('b', ontem)]);
     final drive = tablet.exportJson(); // Drive ainda tem as duas
     tablet.deleteSong('a');
-    tablet.importJson(drive, origem: 'drive'); // sync: baixa e mescla
+    tablet.importJson(drive); // sync: baixa e mescla
     expect(tablet.songs.map((x) => x.id), ['b'], reason: 'a ressuscitou');
   });
 
@@ -21,7 +21,7 @@ void main() {
     final tablet = AppState()..songs.addAll([s('a', ontem), s('b', ontem)]);
     final web = AppState()..songs.addAll([s('a', ontem), s('b', ontem)]);
     web.deleteSong('b');
-    tablet.importJson(web.exportJson(), origem: 'drive');
+    tablet.importJson(web.exportJson());
     expect(tablet.songs.map((x) => x.id), ['a']);
     expect(tablet.audit.first.details.join(' '), contains('Excluídas em outro aparelho: b'));
   });
@@ -31,7 +31,7 @@ void main() {
     final b = AppState()..songs.add(s('x', ontem));
     a.deleteSong('x');
     b.songs.first.updatedAt = DateTime.now().add(const Duration(minutes: 1));
-    a.importJson(b.exportJson(), origem: 'drive');
+    a.importJson(b.exportJson());
     expect(a.songById('x'), isNotNull);
   });
 
@@ -50,8 +50,8 @@ void main() {
     final drive = a.exportJson();
     var avisos = 0;
     a.addListener(() => avisos++);
-    a.importJson(drive, origem: 'drive');
-    a.importJson(drive, origem: 'drive');
+    a.importJson(drive);
+    a.importJson(drive);
     expect(a.audit, isEmpty);
     expect(avisos, 0, reason: 'nem notifica (regravar dispararia outro sync)');
   });
@@ -63,7 +63,7 @@ void main() {
         Song(id: 'a', title: 'Santo', capo: 2, updatedAt: DateTime.now()),
         Song(id: 'n', title: 'Ave Maria', updatedAt: DateTime.now()),
       ]);
-    tablet.importJson(web.exportJson(), origem: 'drive');
+    tablet.importJson(web.exportJson());
     final d = tablet.audit.single.details.join(' | ');
     expect(d, contains('Músicas novas: Ave Maria'));
     expect(d, contains('Músicas alteradas: Santo'));

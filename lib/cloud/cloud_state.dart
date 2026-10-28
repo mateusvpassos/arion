@@ -282,7 +282,7 @@ class CloudState extends ChangeNotifier with WidgetsBindingObserver {
     erro = null;
     try {
       if (DesktopAuth.ativo) {
-        // o mesmo login do Drive (client "App para computador", liberado
+        // login no navegador (client "App para computador", liberado
         // no Firebase em Authentication > Google > IDs de cliente externos)
         final d = DesktopAuth.instance;
         await d.entrar();
@@ -335,7 +335,6 @@ class CloudState extends ChangeNotifier with WidgetsBindingObserver {
   Future<void> sair() async {
     await _flush();
     _pararGrupo();
-    // saiu: no próximo início volta a sincronizar pelo Drive
     _grupoSalvo = '';
     await _gravaPrefs();
     await FirebaseAuth.instance.signOut();

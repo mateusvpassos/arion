@@ -46,7 +46,6 @@ App feito em **Flutter** (Android, Windows e iOS), focado em ser **bonito, rápi
 ### Backup & exportar
 - Tudo fica no aparelho (`arion_data.json`) e na nuvem (Firebase) — funciona sem internet e sobe quando voltar
 - **Exportar / importar JSON** (backup completo)
-- Sem a nuvem ligada, ainda dá p/ sincronizar pelo **Google Drive** (pasta privada `appDataFolder`)
 - **PDF** (1 ou 2 colunas, encaixa na página), **Word (.docx)**, **imagem** e **TXT só letras** — da música ou do repertório inteiro no tom do repertório
 
 ### Grupos e acervo (nuvem — Firebase)
@@ -131,7 +130,7 @@ lib/
 ├── live/                   # sessão ao vivo: hub WebSocket + descoberta UDP + tela
 ├── data/store.dart         # estado global (ChangeNotifier) + persistência JSON
 ├── models/song.dart        # Song · Section · Line · Chord · Setlist · Settings
-├── sync/                   # login Google no PC (desktop_auth) + sync Drive (opcional)
+├── sync/                   # login Google no PC (desktop_auth)
 └── ui/                     # biblioteca, apresentação, editor, repertórios, configurações
 ```
 

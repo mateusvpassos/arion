@@ -8,7 +8,6 @@ import 'package:url_launcher/url_launcher.dart';
 import 'tema.dart';
 import '../core/pedal.dart';
 import '../data/store.dart';
-import '../sync/drive_sync.dart';
 import 'audit_page.dart';
 
 class SettingsPage extends StatelessWidget {
@@ -156,8 +155,6 @@ class SettingsPage extends StatelessWidget {
               );
             }),
           ]),
-          // só Firebase: Drive aparece só se a nuvem não estiver configurada
-          if (!CloudConfig.ligado) _card('Google Drive', [_drive(context, st)]),
           _card('Privacidade', [
             ListTile(
               contentPadding: EdgeInsets.zero,
@@ -259,85 +256,6 @@ class SettingsPage extends StatelessWidget {
     ).then((_) => fn.dispose());
   }
 
-  Widget _drive(BuildContext context, AppState st) {
-    final sync = context.watch<SyncState>();
-    if (!sync.signedIn) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (sync.error != null)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Text('Erro: ${sync.error}',
-                  style: const TextStyle(color: Colors.redAccent, fontSize: 12)),
-            ),
-          FilledButton.icon(
-            onPressed: sync.busy ? null : () => sync.signIn(),
-            icon: const Icon(Icons.login),
-            label: const Text('Entrar com Google'),
-          ),
-        ],
-      );
-    }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        ListTile(
-          contentPadding: EdgeInsets.zero,
-          leading: const Icon(Icons.account_circle),
-          title: Text(sync.email),
-          subtitle: sync.lastSync == null
-              ? const Text('Ainda não sincronizado')
-              : Text('Último sync: ${_fmt(sync.lastSync!)}'),
-          trailing: TextButton(onPressed: () => sync.signOut(), child: const Text('Sair')),
-        ),
-        if (sync.error != null)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Text('Erro: ${sync.error}',
-                style: const TextStyle(color: Colors.redAccent, fontSize: 12)),
-          ),
-        SwitchListTile(
-          contentPadding: EdgeInsets.zero,
-          title: const Text('Sync automático'),
-          subtitle: const Text('Ao salvar, busca o que mudou no Drive e envia o daqui'),
-          value: sync.autoSync,
-          onChanged: (v) => sync.setAutoSync(v),
-        ),
-        FilledButton.icon(
-          onPressed: sync.busy ? null : () => _doSync(context, () => sync.sync(st), 'Sincronizado'),
-          icon: const Icon(Icons.sync),
-          label: const Text('Sincronizar agora'),
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: sync.busy ? null : () => _doSync(context, () => sync.upload(st), 'Enviado'),
-                icon: const Icon(Icons.cloud_upload),
-                label: const Text('Enviar'),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: sync.busy ? null : () => _confirmDownload(context, st, sync),
-                icon: const Icon(Icons.cloud_download),
-                label: const Text('Baixar'),
-              ),
-            ),
-          ],
-        ),
-        if (sync.busy)
-          const Padding(
-            padding: EdgeInsets.only(top: 12),
-            child: LinearProgressIndicator(),
-          ),
-      ],
-    );
-  }
-
   void _abrirUrl(String url) =>
       launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
 
@@ -372,34 +290,6 @@ class SettingsPage extends StatelessWidget {
       const SnackBar(content: Text('Pedido de exclusão enviado. Você saiu da conta.')),
     );
   }
-
-  void _doSync(BuildContext context, Future<bool> Function() op, String okMsg) async {
-    final ok = await op();
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(ok ? okMsg : 'Falhou')),
-    );
-  }
-
-  void _confirmDownload(BuildContext context, AppState st, SyncState sync) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Baixar do Drive'),
-        content: const Text('Substitui a biblioteca local pela do Drive. Continuar?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Baixar')),
-        ],
-      ),
-    );
-    if (ok != true || !context.mounted) return;
-    _doSync(context, () => sync.download(st), 'Biblioteca atualizada');
-  }
-
-  String _fmt(DateTime d) =>
-      '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')} '
-      '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
 
   void _export(BuildContext context, AppState st) async {
     final json = st.exportJson();

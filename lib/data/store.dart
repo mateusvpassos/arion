@@ -17,8 +17,8 @@ class AppState extends ChangeNotifier {
   final List<AuditEvent> audit = [];
 
   /// "Lápides": o que foi excluído e quando (`song:<id>` / `setlist:<id>`).
-  /// Viajam no sync do Drive p/ a exclusão chegar nos outros aparelhos — sem
-  /// isso o sync baixava a música apagada de volta e ela ressuscitava.
+  /// Viajam no backup (JSON) p/ a exclusão chegar nos outros aparelhos — sem
+  /// isso o import trazia a música apagada de volta e ela ressuscitava.
   final Map<String, DateTime> deleted = {};
   static const _tombstoneDays = 365;
   static const _auditMax = 400;
@@ -31,8 +31,6 @@ class AppState extends ChangeNotifier {
   Timer? _debounce;
   bool loaded = false;
 
-  /// Chamado após cada gravação (usado p/ sync automático no Drive).
-  void Function()? onPersist;
 
   /// Mudança feita AQUI (não recebida de outro aparelho) — a sessão ao vivo
   /// e a nuvem usam p/ repassar. Quem chega via applyRemote*/applyCloud* não
@@ -271,7 +269,6 @@ class AppState extends ChangeNotifier {
   void touch() {
     notifyListeners();
     _scheduleSave();
-    onPersist?.call();
   }
 
   Song? songById(String id) {
@@ -617,11 +614,7 @@ class AppState extends ChangeNotifier {
   /// Importa backup.
   /// replace=true substitui tudo; senão faz merge LWW (mantém o mais recente por updatedAt).
   /// Retorna nº de músicas importadas.
-  int importJson(
-    String text, {
-    bool replace = false,
-    String origem = 'arquivo',
-  }) {
+  int importJson(String text, {bool replace = false}) {
     final j = jsonDecode(text) as Map<String, dynamic>;
     final inSongs = (j['songs'] as List? ?? [])
         .map((e) => Song.fromJson(e as Map<String, dynamic>))
@@ -691,24 +684,17 @@ class AppState extends ChangeNotifier {
         novosL.isNotEmpty ||
         mudadosL.isNotEmpty ||
         removidosL.isNotEmpty;
-    // Sync sem novidade não grava, não notifica e não registra: com o sync
-    // automático cada salvamento gerava um "Sync com o Drive" vazio no
-    // histórico (e regravar dispararia outro sync).
+    // import sem novidade não grava, não notifica e não registra
     if (!mudou) return inSongs.length;
 
     String lista(List<String> xs) => xs.length <= 4
         ? xs.join(', ')
         : '${xs.take(4).join(', ')} e mais ${xs.length - 4}';
     _resnap();
-    final doDrive = origem == 'drive';
     _log(
-      doDrive ? 'sincronizou' : 'importou',
+      'importou',
       'backup',
-      doDrive
-          ? (replace ? 'Baixou do Drive (substituiu)' : 'Recebeu do Drive')
-          : (replace
-                ? 'Importou backup (substituiu)'
-                : 'Importou backup (mesclou)'),
+      replace ? 'Importou backup (substituiu)' : 'Importou backup (mesclou)',
       details: [
         if (novas.isNotEmpty) 'Músicas novas: ${lista(novas)}',
         if (mudadas.isNotEmpty) 'Músicas alteradas: ${lista(mudadas)}',
