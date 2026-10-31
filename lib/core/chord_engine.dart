@@ -208,6 +208,35 @@ class ChordEngine {
       return toks.length >= 2 || toks.any((t) => t.contains(RegExp(r'[0-9/#b(]')));
     }
 
+    // música inteira sem nenhum acorde, mas com linha que é claramente de
+    // acorde: foi colada e o import falhou (ex.: invisível grudado em toda
+    // linha). Importa de novo o texto todo: aí acorde sozinho ("D") e
+    // "[Refrão]" também entram certo.
+    final linhas = sections.expand((s) => s.lines).toList();
+    final colagemFalhou = linhas.any((l) =>
+        l.lyric.contains(_invisiveis) || RegExp(r'^\s*\[[^\]]+\]\s*$').hasMatch(l.lyric));
+    if (colagemFalhou && linhas.every((l) => l.chords.isEmpty)) {
+      bool deAcorde(SongLine l) {
+        final t = l.lyric.replaceAll(_invisiveis, '');
+        return t.trim().isNotEmpty && _isChordLine(t);
+      }
+      final temAcorde = linhas.any((l) =>
+          deAcorde(l) && claramenteAcorde(l.lyric.replaceAll(_invisiveis, '')));
+      if (temAcorde) {
+        final texto = sections
+            .map((s) => [
+                  if (s.name.isNotEmpty) '[${s.name}]',
+                  ...s.lines.map((l) => l.lyric),
+                ].join('\n'))
+            .join('\n\n');
+        final novas = importText(texto);
+        sections
+          ..clear()
+          ..addAll(novas);
+        return linhas.where(deAcorde).length;
+      }
+    }
+
     for (final sec in sections) {
       // invisível colado do site (só em linha sem acorde: tirar caractere
       // mudaria a posição dos acordes)

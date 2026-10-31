@@ -82,6 +82,32 @@ void main() {
     expect(l.lyric.contains(z), isFalse);
   });
 
+  test('cifra colada do Cifra Club com invisível em toda linha: reimporta', () {
+    const z = '​';
+    final linhas = [
+      '[Primeira Parte]', '     D        ', 'Que bom, Senhor', 'A            Bm    G',
+      'Ir ao Teu encontro', '', '[Refrão]', ' D    F#m', 'Te olhar',
+    ];
+    final secs = [
+      Section('', [for (final l in linhas) SongLine('$z$l', [])]),
+    ];
+    expect(ChordEngine.repairChordLines(secs), greaterThan(0));
+    expect(secs.map((s) => s.name), ['Primeira Parte', 'Refrão']);
+    final tudo = secs.expand((s) => s.lines).toList();
+    expect(tudo.first.lyric, 'Que bom, Senhor');
+    expect(tudo.first.chords.map((c) => c.sym), ['D']);
+    expect(tudo.every((l) => !l.lyric.contains(z)), isTrue);
+    expect(tudo.last.chords.map((c) => c.sym), ['D', 'F#m']);
+  });
+
+  test('só letra (sem nenhuma linha de acorde) não é mexida', () {
+    final secs = [
+      Section('', [SongLine('Em casa', []), SongLine('A paz do Senhor', [])]),
+    ];
+    expect(ChordEngine.repairChordLines(secs), 0);
+    expect(secs[0].lines.map((l) => l.lyric), ['Em casa', 'A paz do Senhor']);
+  });
+
   test('letra sem acordes vira seções', () {
     final secs = ChordEngine.importText('Primeira linha\nSegunda linha\n\nRefrão linha\nOutra');
     final linhas = secs.expand((s) => s.lines).where((l) => l.lyric.isNotEmpty).toList();
