@@ -62,6 +62,26 @@ void main() {
     });
   });
 
+  test('caractere invisível colado do site não impede o acorde', () {
+    const z = '​';
+    // já gravada assim (acorde virou letra): conserta ao carregar
+    final secs = [
+      Section('', [
+        SongLine('${z}D         A7           D', []),
+        SongLine('${z}Bem-aventurados são os pobres', []),
+      ]),
+    ];
+    expect(ChordEngine.repairChordLines(secs), greaterThan(0));
+    expect(secs[0].lines, hasLength(1));
+    expect(secs[0].lines[0].lyric, 'Bem-aventurados são os pobres');
+    expect(secs[0].lines[0].chords.map((c) => '${c.sym}@${c.idx}'), ['D@0', 'A7@10', 'D@23']);
+    // colando de novo: já entra certo
+    final imp = ChordEngine.importText('${z}G   D\n${z}Segura na mão');
+    final l = imp.expand((s) => s.lines).first;
+    expect(l.chords.map((c) => c.sym), ['G', 'D']);
+    expect(l.lyric.contains(z), isFalse);
+  });
+
   test('letra sem acordes vira seções', () {
     final secs = ChordEngine.importText('Primeira linha\nSegunda linha\n\nRefrão linha\nOutra');
     final linhas = secs.expand((s) => s.lines).where((l) => l.lyric.isNotEmpty).toList();

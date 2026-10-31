@@ -209,6 +209,14 @@ class ChordEngine {
     }
 
     for (final sec in sections) {
+      // invisível colado do site (só em linha sem acorde: tirar caractere
+      // mudaria a posição dos acordes)
+      for (final l in sec.lines) {
+        if (l.chords.isEmpty && l.lyric.contains(_invisiveis)) {
+          l.lyric = l.lyric.replaceAll(_invisiveis, '');
+          n++;
+        }
+      }
       final out = <SongLine>[];
       for (var i = 0; i < sec.lines.length; i++) {
         final l = sec.lines[i];
@@ -423,8 +431,17 @@ class ChordEngine {
     return out;
   }
 
+  /// Caracteres invisíveis que vêm colados de sites (espaço de largura zero,
+  /// BOM...): grudados no acorde, "​D" deixava de ser acorde.
+  static final _invisiveis = RegExp('[​-‍⁠﻿]');
+
   static List<Section> importText(String text) {
-    final clean = text.replaceAll('\r', '').split('\n').map(_stripTags).toList();
+    final clean = text
+        .replaceAll(_invisiveis, '')
+        .replaceAll('\r', '')
+        .split('\n')
+        .map(_stripTags)
+        .toList();
     final raw = _fixCifraClub(clean).map(_stripResidue).toList();
     final sections = <Section>[];
     var cur = Section('', []);
