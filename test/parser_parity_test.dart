@@ -22,6 +22,7 @@ void main() {
         return '${m.title}|${m.artist}|${m.key}|${m.capo}';
       }).toList(),
       'keys': cases.map((c) => '${ChordEngine.suggestKey(ChordEngine.importText(c))}').toList(),
+      'emCima': cases.map((c) => ChordEngine.cifraEmCima(ChordEngine.importText(c))).toList(),
       'transp': [
         for (final c in ['D7/9', 'A7/13', 'Am7/G', 'F#m7(b5)/E', 'Cb', 'E#', 'Bø', '(2x)', 'N.C.', '|', 'B7(4/9)', 'Bb7M(9)'])
           for (final s in [-3, 1, 2])

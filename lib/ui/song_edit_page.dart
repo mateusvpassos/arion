@@ -117,9 +117,8 @@ class _SongEditPageState extends State<SongEditPage> {
     _title = TextEditingController(text: _song.title);
     _artist = TextEditingController(text: _song.artist);
     _key = TextEditingController(text: _song.key);
-    _text = TextEditingController(
-      text: ChordEngine.serializeSections(_song.sections),
-    );
+    _textoGerado = ChordEngine.cifraEmCima(_song.sections);
+    _text = TextEditingController(text: _textoGerado);
     _notes = TextEditingController(text: _song.notes);
     _bpm = TextEditingController(text: _song.bpm > 0 ? '${_song.bpm}' : '');
     _current = ChordEngine.serializeSections(_song.sections);
@@ -131,9 +130,7 @@ class _SongEditPageState extends State<SongEditPage> {
   late final String _inicial;
 
   String _assinatura() {
-    final secs = _mode == 1
-        ? ChordEngine.importText(_text.text)
-        : _song.sections;
+    final secs = _mode == 1 ? _secoesDoTexto() : _song.sections;
     return [
       _title.text.trim(),
       _artist.text.trim(),
@@ -283,8 +280,17 @@ class _SongEditPageState extends State<SongEditPage> {
     );
   }
 
+  // O modo texto mostra o acorde em cima da letra. Se o texto não foi
+  // mexido, a cifra fica como estava: a ida e volta pelo texto pode mover um
+  // acorde grudado no outro.
+  String _textoGerado = '';
+
+  List<Section> _secoesDoTexto() => _text.text == _textoGerado
+      ? _song.sections
+      : ChordEngine.importText(_text.text);
+
   void _applyText() {
-    _song.sections = ChordEngine.importText(_text.text);
+    _song.sections = _secoesDoTexto();
   }
 
   void _maybeSuggestKey() {
@@ -398,7 +404,7 @@ class _SongEditPageState extends State<SongEditPage> {
     );
     if (ok == true && ctrl.text.trim().isNotEmpty) {
       _song.sections = ChordEngine.importText(ctrl.text);
-      _text.text = ChordEngine.serializeSections(_song.sections);
+      _syncTextFromModel();
       // "Tom: G", "Capo 2", {title: ...} no texto colado preenchem os campos
       final meta = ChordEngine.detectMeta(ctrl.text);
       final t = _title.text.trim();
@@ -417,8 +423,8 @@ class _SongEditPageState extends State<SongEditPage> {
   }
 
   void _exportText() {
-    final t = ChordEngine.serializeSections(
-      _mode == 1 ? ChordEngine.importText(_text.text) : _song.sections,
+    final t = ChordEngine.cifraEmCima(
+      _mode == 1 ? _secoesDoTexto() : _song.sections,
     );
     Clipboard.setData(ClipboardData(text: t));
     ScaffoldMessenger.of(
@@ -427,7 +433,8 @@ class _SongEditPageState extends State<SongEditPage> {
   }
 
   void _syncTextFromModel() {
-    _text.text = ChordEngine.serializeSections(_song.sections);
+    _textoGerado = ChordEngine.cifraEmCima(_song.sections);
+    _text.text = _textoGerado;
   }
 
   Widget _page(BuildContext context) {
@@ -680,7 +687,7 @@ class _SongEditPageState extends State<SongEditPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Use [Acorde] antes da sílaba. Linha com # = seção. Ex.:  O [G]esplendor de um [D]Rei',
+            'Acorde na linha de cima, alinhado com a sílaba (ou [G] antes dela). Linha com # = seção.',
             style: TextStyle(fontSize: 12, color: Theme.of(context).hintColor),
           ),
           const SizedBox(height: 8),

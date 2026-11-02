@@ -46,8 +46,9 @@ class Diff {
     return out;
   }
 
-  /// Texto da música como no editor ([G]letra, #Seção) — é o que se compara.
-  static String texto(Song s) => ChordEngine.serializeSections(s.sections);
+  /// Texto da música com o acorde em cima da letra (#Seção) — é o que se
+  /// compara e se mostra.
+  static String texto(Song s) => ChordEngine.cifraEmCima(s.sections);
 
   /// Só os trechos que mudaram, com [contexto] linhas iguais em volta
   /// (null no lugar das iguais escondidas).

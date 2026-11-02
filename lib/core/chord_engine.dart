@@ -279,6 +279,50 @@ class ChordEngine {
     }).join('\n\n');
   }
 
+  /// Texto "acorde em cima da letra" (como nos sites de cifra), que o
+  /// [importText] lê de volta. Bem mais fácil de ler que o [G] no meio da
+  /// letra: é o do modo texto do editor, da comparação e do copiar.
+  static String cifraEmCima(List<Section> sections) {
+    final out = <String>[];
+    for (final s in sections) {
+      if (out.isNotEmpty) out.add('');
+      if (s.name.isNotEmpty) out.add('#${s.name}');
+      for (var k = 0; k < s.lines.length; k++) {
+        final l = s.lines[k];
+        final letra = l.lyric.trimRight();
+        if (l.chords.isEmpty) {
+          out.add(letra);
+          continue;
+        }
+        final sorted = [...l.chords]..sort((a, b) => a.idx.compareTo(b.idx));
+        var acordes = '';
+        for (final c in sorted) {
+          var col = c.idx < 0 ? 0 : c.idx;
+          // acorde grudado no anterior: empurra (no texto, um espaço entre)
+          if (acordes.isNotEmpty && col <= acordes.length) {
+            col = acordes.length + 1;
+          }
+          acordes = acordes.padRight(col) + c.sym;
+        }
+        if (letra.trim().isNotEmpty) {
+          out
+            ..add(acordes)
+            ..add(letra);
+          continue;
+        }
+        // linha só de acordes seguida de letra sem acorde: no formato em
+        // cima as duas se juntariam ao reimportar; vai como [G] [D]
+        final prox = k + 1 < s.lines.length ? s.lines[k + 1] : null;
+        final junta =
+            prox != null &&
+            prox.chords.isEmpty &&
+            prox.lyric.trim().isNotEmpty;
+        out.add(junta ? serializeLine(l).trimRight() : acordes);
+      }
+    }
+    return out.join('\n');
+  }
+
   // ---- limpeza do texto colado ----
 
   static final _inlineChord = RegExp(r'\[[A-G][#b]?[^\]]*\]');
