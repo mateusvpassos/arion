@@ -5,6 +5,8 @@ import '../cloud/acervo.dart';
 import '../cloud/cloud_state.dart';
 import '../core/chord_engine.dart';
 import '../core/letras.dart';
+import 'package:image_picker/image_picker.dart' show ImageSource;
+import 'ocr_imagem.dart';
 import '../data/store.dart';
 import '../models/song.dart';
 import 'package:provider/provider.dart';
@@ -287,14 +289,59 @@ class _SongEditPageState extends State<SongEditPage> {
     if (k != null) _key.text = k;
   }
 
-  Future<void> _importDialog() async {
-    final ctrl = TextEditingController();
+  /// Lê a cifra de uma foto/print e abre a tela de importar já preenchida
+  /// p/ conferir (o OCR pode errar uma letra ou outra).
+  Future<void> _importarImagem() async {
+    final fonte = await showModalBottomSheet<ImageSource>(
+      context: context,
+      showDragHandle: true,
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('Escolher print ou foto'),
+              onTap: () => Navigator.pop(context, ImageSource.gallery),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_camera_outlined),
+              title: const Text('Tirar foto agora'),
+              onTap: () => Navigator.pop(context, ImageSource.camera),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (fonte == null || !mounted) return;
+    String? texto;
+    try {
+      texto = await OcrImagem.lerCifra(fonte);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Não deu p/ ler a imagem: $e')));
+      }
+      return;
+    }
+    if (texto == null || !mounted) return;
+    if (texto.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Não achei texto nessa imagem')),
+      );
+      return;
+    }
+    await _importDialog(inicial: texto, daImagem: true);
+  }
+
+  Future<void> _importDialog({String inicial = '', bool daImagem = false}) async {
+    final ctrl = TextEditingController(text: inicial);
     final ok = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
         title: Row(
           children: [
-            const Expanded(child: Text('Importar cifra')),
+            Expanded(child: Text(daImagem ? 'Confira a cifra lida' : 'Importar cifra')),
             TextButton.icon(
               icon: const Icon(Icons.content_paste, size: 18),
               label: const Text('Colar'),
@@ -307,9 +354,21 @@ class _SongEditPageState extends State<SongEditPage> {
         ),
         content: SizedBox(
           width: 600,
-          child: TextField(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (daImagem)
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 8),
+                  child: Text(
+                    'Lido da imagem: confira os acordes e a letra antes de importar.',
+                    style: TextStyle(fontSize: 13),
+                  ),
+                ),
+              TextField(
             controller: ctrl,
-            autofocus: true,
+            autofocus: !daImagem,
             maxLines: 14,
             style: const TextStyle(fontFamily: 'ChordMono', fontSize: 13),
             decoration: const InputDecoration(
@@ -317,6 +376,8 @@ class _SongEditPageState extends State<SongEditPage> {
               hintText:
                   'Cole a cifra aqui (acordes acima da letra ou [G]letra)...',
             ),
+          ),
+            ],
           ),
         ),
         actions: [
@@ -384,6 +445,12 @@ class _SongEditPageState extends State<SongEditPage> {
             icon: const Icon(Icons.lyrics_outlined),
             onPressed: _buscarLetra,
           ),
+          if (OcrImagem.disponivel)
+            IconButton(
+              tooltip: 'Importar de imagem (print ou foto)',
+              icon: const Icon(Icons.document_scanner_outlined),
+              onPressed: _importarImagem,
+            ),
           IconButton(
             tooltip: 'Importar cifra',
             icon: const Icon(Icons.paste),
