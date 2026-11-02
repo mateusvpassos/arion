@@ -57,6 +57,26 @@ void main() {
     expect(ondeCaem(cifra), ['D@bom,', 'A@Senhor']);
   });
 
+  test('foto torta: linha de acordes partida em duas vira uma', () {
+    // "Em C" numa altura e "D D7" um pouco abaixo, à direita, sobre a mesma letra
+    final ps = [
+      const PalavraOcr('Em', 50, 0, 70, 10),
+      const PalavraOcr('C', 200, 1, 210, 11),
+      const PalavraOcr('D', 300, 9, 310, 19),
+      const PalavraOcr('D7', 340, 10, 360, 20),
+      const PalavraOcr('EABENÇOA', 0, 30, 90, 40),
+      const PalavraOcr('A', 100, 30, 110, 40),
+      const PalavraOcr('TODOS', 120, 30, 180, 40),
+      const PalavraOcr('QUE', 190, 31, 230, 41),
+      const PalavraOcr('ESPERAM', 240, 31, 320, 41),
+      const PalavraOcr('EM', 330, 32, 350, 42),
+      const PalavraOcr('VÓS.', 360, 32, 400, 42),
+    ];
+    final linhas = OcrCifra.montar(ps).split('\n');
+    expect(linhas, hasLength(2));
+    expect(ondeCaem(linhas.join('\n')).map((x) => x.split('@').first), ['Em', 'C', 'D', 'D7']);
+  });
+
   test('print real (Como És Lindo): partes e acordes nas palavras certas', () {
     final cifra = OcrCifra.montar(fixture('ocr_como_es_lindo.json'));
     final secs = ChordEngine.importText(cifra);

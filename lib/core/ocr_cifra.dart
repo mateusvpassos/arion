@@ -63,6 +63,30 @@ class OcrCifra {
     return linhas;
   }
 
+  /// Foto torta: uma linha de acordes sai partida em duas (o lado direito
+  /// mais baixo). Duas linhas de acorde seguidas, perto na altura e sem se
+  /// sobrepor na horizontal, viram uma.
+  static List<List<PalavraOcr>> _juntarAcordesPartidos(List<List<PalavraOcr>> linhas) {
+    final h = _mediana([for (final l in linhas) for (final p in l) p.altura]);
+    final out = <List<PalavraOcr>>[];
+    for (final l in linhas) {
+      final ant = out.isEmpty ? null : out.last;
+      if (ant != null && _ehLinhaDeAcorde(ant) && _ehLinhaDeAcorde(l)) {
+        final cyAnt = ant.map((p) => p.centroY).reduce((a, b) => a + b) / ant.length;
+        final cy = l.map((p) => p.centroY).reduce((a, b) => a + b) / l.length;
+        final sobrepoe = l.any((p) => ant.any((q) => p.esq < q.dir && q.esq < p.dir));
+        if (!sobrepoe && (cy - cyAnt).abs() < h * 1.3) {
+          ant
+            ..addAll(l)
+            ..sort((a, b) => a.esq.compareTo(b.esq));
+          continue;
+        }
+      }
+      out.add(l);
+    }
+    return out;
+  }
+
   static bool _ehAcorde(PalavraOcr p) => ChordEngine.isChordSymbol(corrigirAcorde(p.texto));
 
   /// Linha de acordes: a maioria dos tokens é acorde (o OCR às vezes junta
@@ -77,7 +101,7 @@ class OcrCifra {
   static String montar(List<PalavraOcr> palavras) {
     final ps = palavras.where((p) => p.texto.trim().isNotEmpty).toList();
     if (ps.isEmpty) return '';
-    final linhas = _linhas(ps);
+    final linhas = _juntarAcordesPartidos(_linhas(ps));
     final acorde = [for (final l in linhas) _ehLinhaDeAcorde(l)];
 
     // largura média de um caractere (das linhas de letra)
