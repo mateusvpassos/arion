@@ -19,6 +19,19 @@ class AcervoState extends ChangeNotifier {
   final AppState app;
   AcervoState(this.cloud, this.app) {
     cloud.addListener(_userMudou);
+    // música nova salva: publica já (antes esperava um aviso da nuvem e só
+    // aparecia no acervo bem depois)
+    app.addListener(_bibliotecaMudou);
+  }
+
+  bool _agendado = false;
+  void _bibliotecaMudou() {
+    if (_agendado) return;
+    _agendado = true;
+    scheduleMicrotask(() {
+      _agendado = false;
+      _publicarSozinho();
+    });
   }
 
   /// id da versão -> versão (só as que não foram apagadas)
@@ -483,6 +496,7 @@ class AcervoState extends ChangeNotifier {
   @override
   void dispose() {
     cloud.removeListener(_userMudou);
+    app.removeListener(_bibliotecaMudou);
     for (final s in _subs) {
       s.cancel();
     }
