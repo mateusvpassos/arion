@@ -1,7 +1,7 @@
 name: arion
 description: "Arion — cifras, acordes e repertórios p/ tocar ao vivo, tablet-first."
 publish_to: 'none'
-version: 1.0.0+2
+version: 1.0.0+3
 
 environment:
   sdk: ^3.12.2
