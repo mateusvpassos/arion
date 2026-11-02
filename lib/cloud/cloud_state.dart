@@ -370,6 +370,7 @@ class CloudState extends ChangeNotifier with WidgetsBindingObserver {
     _gruposSub = null;
     if (user == null) {
       _pararGrupo();
+      _ouvirPendentesOutros();
       return;
     }
     _gruposSub = _db
@@ -417,6 +418,7 @@ class CloudState extends ChangeNotifier with WidgetsBindingObserver {
                   salvo ?? minha ?? (grupos.length == 1 ? grupos.first : null);
               if (escolhido != null) _abrirGrupo(escolhido);
             }
+            _ouvirPendentesOutros();
             notifyListeners();
           },
           onError: (e) {
@@ -458,6 +460,39 @@ class CloudState extends ChangeNotifier with WidgetsBindingObserver {
 
   /// Troca o grupo em uso no app. Tira deste aparelho o que era do grupo
   /// anterior (continua salvo lá); senão ia parar no grupo novo.
+  // ---------------- sugestões nos OUTROS grupos ----------------
+  // Só a contagem das que esperam por mim (sou o dono da música): p/ decidir,
+  // abre o grupo. Antes elas ficavam invisíveis até trocar de grupo.
+
+  final Map<String, int> pendentesOutros = {};
+  final Map<String, StreamSubscription> _subsOutros = {};
+  int get totalPendentesOutros => pendentesOutros.values.fold(0, (a, b) => a + b);
+
+  void _ouvirPendentesOutros() {
+    final ids = {
+      if (user != null)
+        for (final g in grupos)
+          if (g.id != grupo?.id) g.id,
+    };
+    for (final id in _subsOutros.keys.toList()) {
+      if (ids.contains(id)) continue;
+      _subsOutros.remove(id)?.cancel();
+      pendentesOutros.remove(id);
+    }
+    for (final g in grupos) {
+      if (!ids.contains(g.id) || _subsOutros.containsKey(g.id)) continue;
+      _subsOutros[g.id] = _ref(g)
+          .collection('sugestoes')
+          .where('status', isEqualTo: 'pendente')
+          .where('dono', isEqualTo: eu)
+          .snapshots()
+          .listen((q) {
+            pendentesOutros[g.id] = q.size;
+            notifyListeners();
+          }, onError: (_) {});
+    }
+  }
+
   void escolherGrupo(Grupo g) {
     if (grupo?.id == g.id) return;
     if (grupo != null) {
@@ -466,6 +501,7 @@ class CloudState extends ChangeNotifier with WidgetsBindingObserver {
     }
     _pararGrupo();
     _abrirGrupo(g);
+    _ouvirPendentesOutros();
     notifyListeners();
   }
 
@@ -1100,6 +1136,9 @@ class CloudState extends ChangeNotifier with WidgetsBindingObserver {
     WidgetsBinding.instance.removeObserver(this);
     _authSub?.cancel();
     _gruposSub?.cancel();
+    for (final s in _subsOutros.values) {
+      s.cancel();
+    }
     _pararGrupo();
     super.dispose();
   }

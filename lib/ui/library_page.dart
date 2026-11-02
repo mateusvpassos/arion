@@ -630,7 +630,7 @@ class _CloudButtons extends StatelessWidget {
     final c = context.watch<CloudState>();
     final a = context.watch<AcervoState>();
     if (!c.disponivel) return const SizedBox.shrink();
-    final n = c.paraDecidir.length + a.paraDecidir.length;
+    final n = c.paraDecidir.length + a.paraDecidir.length + c.totalPendentesOutros;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [

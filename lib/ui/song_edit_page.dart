@@ -105,7 +105,11 @@ class _SongEditPageState extends State<SongEditPage> {
     _sugestao = widget.acervo != null
         ? !acervo.podeEditar(src)
         : widget.novo == null && !cloud.podeEditarSong(src);
-    _donoNome = widget.acervo != null
+    // o nome gravado na música vale mais (no grupo que nunca foi aberto, a
+    // lista de nomes ainda não tem o dono e aparecia o começo do e-mail)
+    _donoNome = src.donoNome.isNotEmpty
+        ? src.donoNome
+        : widget.acervo != null
         ? acervo.nomeDe(src.dono)
         : cloud.nomeDe(src.dono);
     _song = src.copy();

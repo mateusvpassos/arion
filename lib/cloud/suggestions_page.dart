@@ -32,7 +32,33 @@ class SuggestionsPage extends StatelessWidget {
         ),
         body: TabBarView(
           children: [
-            _lista(context, decidir, 'Nenhuma sugestão esperando você.'),
+            Column(
+              children: [
+                // grupos fora de uso com sugestão esperando por mim
+                for (final g in c.grupos)
+                  if ((c.pendentesOutros[g.id] ?? 0) > 0)
+                    Card(
+                      margin: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+                      child: ListTile(
+                        leading: const Icon(Icons.groups_outlined),
+                        title: Text(
+                          '${c.pendentesOutros[g.id]} sugestão(ões) esperando você em ${g.nome}',
+                        ),
+                        trailing: TextButton(
+                          onPressed: () => c.escolherGrupo(g),
+                          child: const Text('Abrir esse grupo'),
+                        ),
+                      ),
+                    ),
+                Expanded(
+                  child: _lista(
+                    context,
+                    decidir,
+                    'Nenhuma sugestão esperando você.',
+                  ),
+                ),
+              ],
+            ),
             _lista(context, minhas, 'Você ainda não sugeriu nada.'),
           ],
         ),
