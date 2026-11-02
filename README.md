@@ -70,19 +70,18 @@ Pré-requisitos: Flutter (canal stable). Android: Android Studio (JDK + SDK). Wi
 
 ```bash
 flutter pub get
-flutter build apk --release          # Android
+flutter build apk --release --split-per-abi   # Android (um APK por arquitetura)
 flutter build windows --release --dart-define-from-file=desktop_oauth.json   # PC (client OAuth desktop, fora do git)
 flutter build ios --release --no-codesign   # iOS, no Mac
 ```
 
-APK gerado em:
-```
-build/app/outputs/flutter-apk/app-release.apk
-```
+APKs gerados em `build/app/outputs/flutter-apk/`. Quase todo aparelho atual (o tablet incluso) usa o `app-arm64-v8a-release.apk` (~1/3 do APK único, que tinha 93 MB por causa do leitor de imagem); `armeabi-v7a` é p/ aparelho antigo de 32 bits. `adb shell getprop ro.product.cpu.abi` diz qual.
+
+> O APK separado tem `versionCode` maior (o Flutter soma 2000 no arm64): depois dele, um APK único da mesma versão não instala por cima.
 
 Instalar no tablet via USB (depuração ativada):
 ```bash
-adb install -r build/app/outputs/flutter-apk/app-release.apk
+adb install -r build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
 ```
 …ou copie o `.apk` para o aparelho e abra (permitir "fontes desconhecidas").
 

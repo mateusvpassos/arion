@@ -196,6 +196,22 @@ class SuggestionDetailPage extends StatelessWidget {
               ),
             ),
           ],
+          // cópia de uma música do acervo: aceitar aqui não muda a de lá
+          if (podeDecidir && !x.acervo && atual.baseId.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: scheme.secondaryContainer,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                'Muda só a cópia deste grupo. A música no acervo geral continua '
+                'igual — p/ mudar lá, sugira no acervo.',
+                style: TextStyle(color: scheme.onSecondaryContainer),
+              ),
+            ),
+          ],
           const SizedBox(height: 16),
           Text('O que muda', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),

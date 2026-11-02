@@ -387,16 +387,17 @@ class CloudState extends ChangeNotifier with WidgetsBindingObserver {
                 if (pa != pb) return pa ? -1 : 1;
                 return a.nome.compareTo(b.nome);
               });
-            // sem grupo nenhum (confirmado pelo servidor): cria a biblioteca
-            // pessoal na nuvem — tudo fica no Firebase sem precisar apertar nada
-            if (grupos.isEmpty &&
+            // sem a minha biblioteca pessoal (confirmado pelo servidor): cria
+            // na nuvem — tudo fica no Firebase sem precisar apertar nada. Quem
+            // entrou por convite também ganha a sua (antes só tinha o grupo).
+            if (!grupos.any((x) => x.pessoal && x.dono == eu) &&
                 !q.metadata.isFromCache &&
                 !_criando &&
                 liberado == true) {
               _criando = true;
               criarGrupo('Biblioteca de $nome', pessoal: true)
                   .whenComplete(() => _criando = false);
-              return;
+              if (grupos.isEmpty) return;
             }
             final atual = grupo == null
                 ? null
