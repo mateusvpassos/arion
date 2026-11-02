@@ -10,6 +10,7 @@ rules_version = '2';
 // sessoes/{codigo}                 sessão ao vivo: IPs de quem criou (abre por código)
 // liberados/{email}                quem pode usar a nuvem (login Google é aberto, mas
 //                                  só lê/grava quem foi liberado; convidar p/ um grupo libera)
+// pedidos/{email}                  pedido de acesso de quem ainda não foi liberado
 // grupos/{g}                       nome, dono (e-mail), membros [e-mails]
 // grupos/{g}/pessoas/{email}       nome de quem é do grupo
 // grupos/{g}/confianca/{dono}      editores [e-mails] que mexem em TODAS as músicas/repertórios de {dono}
@@ -81,6 +82,18 @@ service cloud.firestore {
         && request.resource.data.keys().hasOnly(['por', 'em'])
         && request.resource.data.por == eu();
       allow delete: if admin();
+    }
+
+    // pedido de acesso: qualquer conta logada ainda não liberada pede (só o
+    // próprio, um por conta); o dono do app vê a lista, libera ou recusa.
+    match /pedidos/{email} {
+      allow get, delete: if eu() == email || admin();
+      allow list: if admin();
+      allow create, update: if eu() != '' && eu() == email && !liberado()
+        && request.resource.data.keys().hasOnly(['em', 'nome'])
+        && request.resource.data.em == request.time
+        && request.resource.data.nome is string
+        && request.resource.data.nome.size() <= 80;
     }
 
     // pedido de exclusão da conta (LGPD art. 18). Qualquer conta logada pede a

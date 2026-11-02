@@ -54,20 +54,41 @@ class _CloudPageState extends State<CloudPage> {
               icon: Icons.lock_clock_outlined,
               titulo: 'Acesso ainda não liberado',
               children: [
-                Text(
-                  'Peça p/ alguém que já usa o Arion te adicionar num grupo '
-                  '(pelo e-mail ${c.eu}). Ao ser adicionado, o seu acesso é liberado.',
-                ),
+                if (c.pedi == true)
+                  Text(
+                    'Pedido enviado! Assim que for liberado, o app abre '
+                    'sozinho (pode fechar e voltar depois).',
+                    style: TextStyle(color: scheme.primary),
+                  )
+                else
+                  Text(
+                    'Toque em "Pedir acesso" e o dono do app libera você. '
+                    'Ou peça p/ alguém que já usa o Arion te adicionar num grupo '
+                    '(pelo e-mail ${c.eu}).',
+                  ),
                 const SizedBox(height: 12),
-                FilledButton.icon(
-                  onPressed: c.conferirLiberacao,
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('Já me adicionaram'),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    if (c.pedi == false)
+                      FilledButton.icon(
+                        onPressed: c.pedirAcesso,
+                        icon: const Icon(Icons.how_to_reg_outlined),
+                        label: const Text('Pedir acesso'),
+                      ),
+                    OutlinedButton.icon(
+                      onPressed: c.conferirLiberacao,
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Já me adicionaram'),
+                    ),
+                  ],
                 ),
               ],
             ),
           ] else ...[
             _conta(context, c),
+            if (c.pedidos.isNotEmpty) _pedidos(context, c),
             _grupos(context, c),
             _envio(context, c),
             _acervo(context),
@@ -160,6 +181,34 @@ class _CloudPageState extends State<CloudPage> {
       ],
     );
   }
+
+  // dono do app: quem pediu acesso
+  Widget _pedidos(BuildContext context, CloudState c) => _card(
+    context,
+    icon: Icons.how_to_reg_outlined,
+    titulo: 'Pedidos de acesso (${c.pedidos.length})',
+    children: [
+      for (final p in c.pedidos)
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          title: Text(p.nome.isNotEmpty ? p.nome : p.email),
+          subtitle: Text(p.email),
+          trailing: Wrap(
+            spacing: 4,
+            children: [
+              TextButton(
+                onPressed: () => c.recusarPedido(p),
+                child: const Text('Recusar'),
+              ),
+              FilledButton(
+                onPressed: () => c.liberarPedido(p),
+                child: const Text('Liberar'),
+              ),
+            ],
+          ),
+        ),
+    ],
+  );
 
   Widget _conta(BuildContext context, CloudState c) {
     return Card(

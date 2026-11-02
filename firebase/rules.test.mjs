@@ -6,7 +6,7 @@ import {
   initializeTestEnvironment, assertSucceeds, assertFails,
 } from '@firebase/rules-unit-testing';
 import {
-  doc, getDoc, setDoc, updateDoc, deleteDoc, writeBatch, collection, query, where, getDocs,
+  doc, getDoc, setDoc, updateDoc, deleteDoc, writeBatch, collection, query, where, getDocs, serverTimestamp,
 } from 'firebase/firestore';
 
 const DONO = 'mateus@x.com', ANA = 'ana@x.com', BIA = 'bia@x.com', FORA = 'intruso@x.com';
@@ -214,7 +214,6 @@ test('sessão ao vivo: abre por código, não lista, só o dono mexe', async () 
 });
 
 test('pedido de exclusão: cada um pede a própria, só o admin lista e apaga', async () => {
-  const { serverTimestamp } = await import('firebase/firestore');
   const p = { em: serverTimestamp(), nome: 'Intruso' };
   // basta ter login, mesmo sem ser liberado
   await assertSucceeds(setDoc(doc(db(FORA), `exclusoes/${FORA}`), p));
@@ -227,4 +226,24 @@ test('pedido de exclusão: cada um pede a própria, só o admin lista e apaga', 
   await assertFails(deleteDoc(doc(db(FORA), `exclusoes/${FORA}`)));
   await assertSucceeds(getDocs(collection(db(ADMIN), 'exclusoes')));
   await assertSucceeds(deleteDoc(doc(db(ADMIN), `exclusoes/${FORA}`)));
+});
+
+test('pedido de acesso: quem não foi liberado pede o próprio; só o admin vê e decide', async () => {
+  const p = { em: serverTimestamp(), nome: 'Fora' };
+  await assertSucceeds(setDoc(doc(db(FORA), `pedidos/${FORA}`), p));
+  await assertSucceeds(getDoc(doc(db(FORA), `pedidos/${FORA}`)));
+  await assertFails(setDoc(doc(db(FORA), `pedidos/${BIA}`), p)); // em nome de outro
+  await assertFails(setDoc(doc(db(FORA), `pedidos/${FORA}`), { ...p, extra: 1 }));
+  await assertFails(setDoc(doc(db(FORA), `pedidos/${FORA}`), { ...p, nome: 'x'.repeat(81) }));
+  await assertFails(setDoc(doc(db(ANA), `pedidos/${ANA}`), { ...p, nome: 'Ana' })); // já liberada
+  await assertFails(getDocs(collection(db(ANA), 'pedidos')));
+  await assertFails(getDoc(doc(db(ANA), `pedidos/${FORA}`)));
+  await assertSucceeds(getDocs(collection(db(ADMIN), 'pedidos')));
+  // liberar: grava em liberados e apaga o pedido
+  const adm = db(ADMIN);
+  const b = writeBatch(adm);
+  b.set(doc(adm, `liberados/${FORA}`), { por: ADMIN, em: serverTimestamp() });
+  b.delete(doc(adm, `pedidos/${FORA}`));
+  await assertSucceeds(b.commit());
+  await assertSucceeds(getDoc(doc(db(FORA), `liberados/${FORA}`)));
 });

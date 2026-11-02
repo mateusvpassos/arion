@@ -14,6 +14,20 @@ import '../sync/desktop_auth.dart';
 import 'cloud_config.dart';
 
 /// Grupo compartilhado na nuvem.
+class PedidoAcesso {
+  final String email, nome;
+  final DateTime? em;
+  const PedidoAcesso(this.email, this.nome, this.em);
+  factory PedidoAcesso.fromDoc(DocumentSnapshot<Map<String, dynamic>> d) {
+    final j = d.data() ?? const {};
+    return PedidoAcesso(
+      d.id,
+      (j['nome'] ?? '') as String,
+      (j['em'] as Timestamp?)?.toDate(),
+    );
+  }
+}
+
 class Grupo {
   final String id, nome, dono;
   final List<String> membros;
@@ -215,6 +229,7 @@ class CloudState extends ChangeNotifier with WidgetsBindingObserver {
     _authSub = FirebaseAuth.instance.authStateChanges().listen((u) async {
       user = u;
       await _conferirLiberacao();
+      _ouvirAcesso();
       _ouvirGrupos();
       notifyListeners();
     });
@@ -248,9 +263,90 @@ class CloudState extends ChangeNotifier with WidgetsBindingObserver {
   /// "Já fui liberado": confere de novo sem precisar sair e entrar.
   Future<void> conferirLiberacao() async {
     await _conferirLiberacao();
+    _ouvirAcesso();
     _ouvirGrupos();
     notifyListeners();
   }
+
+  // ---------------- pedido de acesso ----------------
+  // Quem não foi liberado pede com um toque (pedidos/{email}); o dono do app
+  // vê a lista e libera. Liberado, o app de quem pediu abre sozinho.
+
+  /// quem não foi liberado: null = conferindo, false = não pediu, true = pediu
+  bool? pedi;
+
+  /// dono do app: pedidos esperando
+  List<PedidoAcesso> pedidos = [];
+  bool get souAdmin => _admins.contains(eu);
+  StreamSubscription? _liberacaoSub, _pedidosSub;
+
+  void _ouvirAcesso() {
+    _liberacaoSub?.cancel();
+    _liberacaoSub = null;
+    _pedidosSub?.cancel();
+    _pedidosSub = null;
+    pedidos = [];
+    if (user == null || !disponivel) return;
+    if (liberado == false) {
+      pedi = null;
+      _db.collection('pedidos').doc(eu).get().then((d) {
+        pedi = d.exists;
+        notifyListeners();
+      }, onError: (_) {});
+      _liberacaoSub = _db.collection('liberados').doc(eu).snapshots().listen((
+        d,
+      ) {
+        if (d.exists) conferirLiberacao();
+      }, onError: (_) {});
+    }
+    // liberado (pelo pedido ou por convite): o pedido que sobrou sai da lista
+    if (liberado == true && !souAdmin) {
+      final ref = _db.collection('pedidos').doc(eu);
+      ref.get().then((d) {
+        if (d.exists) ref.delete().catchError((_) {});
+      }, onError: (_) {});
+    }
+    if (souAdmin) {
+      _pedidosSub = _db
+          .collection('pedidos')
+          .orderBy('em')
+          .snapshots()
+          .listen((q) {
+            pedidos = q.docs.map(PedidoAcesso.fromDoc).toList();
+            notifyListeners();
+          }, onError: (_) {});
+    }
+  }
+
+  Future<void> pedirAcesso() async {
+    erro = null;
+    final n = nome.length > 80 ? nome.substring(0, 80) : nome;
+    try {
+      await _db.collection('pedidos').doc(eu).set({
+        'em': FieldValue.serverTimestamp(),
+        'nome': n,
+      });
+      pedi = true;
+    } catch (e) {
+      erro = 'Não deu para pedir acesso (precisa de internet): $e';
+    }
+    notifyListeners();
+  }
+
+  /// Libera quem pediu (como convidar, mas sem grupo: a pessoa ganha a
+  /// biblioteca pessoal e você a convida p/ um grupo quando quiser).
+  Future<void> liberarPedido(PedidoAcesso p) async {
+    final b = _db.batch()
+      ..set(_db.collection('liberados').doc(p.email), {
+        'por': eu,
+        'em': FieldValue.serverTimestamp(),
+      })
+      ..delete(_db.collection('pedidos').doc(p.email));
+    await _semEsperar(b.commit());
+  }
+
+  Future<void> recusarPedido(PedidoAcesso p) =>
+      _semEsperar(_db.collection('pedidos').doc(p.email).delete());
 
   Future<File> _prefsFile() async {
     final dir = await getApplicationDocumentsDirectory();
@@ -1137,6 +1233,8 @@ class CloudState extends ChangeNotifier with WidgetsBindingObserver {
     WidgetsBinding.instance.removeObserver(this);
     _authSub?.cancel();
     _gruposSub?.cancel();
+    _liberacaoSub?.cancel();
+    _pedidosSub?.cancel();
     for (final s in _subsOutros.values) {
       s.cancel();
     }

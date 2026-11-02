@@ -291,10 +291,21 @@ class _LibraryPageState extends State<LibraryPage>
     final cloud = context.watch<CloudState>();
     final scheme = Theme.of(context).colorScheme;
     if (a.esperandoLiberacao) {
-      return _empty(
-        'Acesso ainda não liberado: peça p/ alguém que usa o app te adicionar num grupo',
-        Icons.lock_clock_outlined,
-      );
+      return cloud.pedi == true
+          ? _empty(
+              'Pedido enviado!',
+              Icons.mark_email_read_outlined,
+              dica: 'Assim que o dono do app liberar, as músicas aparecem aqui sozinhas.',
+              acao: 'Já fui liberado',
+              onAcao: cloud.conferirLiberacao,
+            )
+          : _empty(
+              'Acesso ainda não liberado',
+              Icons.lock_clock_outlined,
+              dica: 'Peça acesso ao dono do app, ou p/ alguém que usa o Arion te adicionar num grupo.',
+              acao: 'Pedir acesso',
+              onAcao: cloud.pedi == false ? cloud.pedirAcesso : null,
+            );
     }
     if (!a.ligado) {
       return _empty('Entre com o Google (ícone de pessoas lá em cima)', Icons.public);
@@ -658,7 +669,14 @@ class _CloudButtons extends StatelessWidget {
           ),
         if (comGrupos) IconButton(
           tooltip: 'Grupos',
-          icon: Icon(c.ativa ? Icons.group_outlined : Icons.cloud_off_outlined),
+          icon: Badge(
+            // dono do app: pedidos de acesso esperando
+            isLabelVisible: c.pedidos.isNotEmpty,
+            label: Text('${c.pedidos.length}'),
+            child: Icon(
+              c.ativa ? Icons.group_outlined : Icons.cloud_off_outlined,
+            ),
+          ),
           onPressed: () => Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => const CloudPage()),
