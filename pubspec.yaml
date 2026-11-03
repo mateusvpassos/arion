@@ -20,9 +20,9 @@ dependencies:
   pdf: ^3.11.1
   share_plus: ^10.1.4
   archive: ^4.0.9 # .docx é um zip de XMLs
-  firebase_core: ^4.15.0
-  firebase_auth: ^6.7.0
-  cloud_firestore: ^6.10.0
+  firebase_core: ^4.15.2
+  firebase_auth: ^6.7.1
+  cloud_firestore: ^6.10.2
   url_launcher: ^6.3.3
   image_picker: ^1.2.4
   google_mlkit_text_recognition: ^0.17.1
